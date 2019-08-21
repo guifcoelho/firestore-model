@@ -5,8 +5,14 @@ node_js:
 install:
   - npm install
 
+# before_script:
+#   - firebase setup:emulators:firestore
+
 script:
-  - npm test
+  - firebase \
+    emulators:exec \
+    --only firestore \
+    "npm run test"
 
 deploy:
   provider: npm

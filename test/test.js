@@ -1,3 +1,15 @@
+require('dotenv').config({ path: `${process.cwd()}/.env` });
+const fs = require('fs');
+process.firebase = require('@firebase/testing');
+
+const projectId = "my-test-project"; 
+process.firebase.initializeTestApp({ projectId });
+process.firebase.loadFirestoreRules({
+  projectId,
+  rules: fs.readFileSync(`${process.cwd()}/test/firestore.rules`, "utf8")
+});
+
+
 var assert = require('assert');
 const BaseModel = require('~src');
 
@@ -8,3 +20,6 @@ describe('FirestoreModel', function() {
     });
   });
 });
+
+process.firebase.clearFirestoreData({ projectId });
+Promise.all(process.firebase.apps().map(app => app.delete()))
