@@ -1,0 +1,11 @@
+{
+  "name": "@guifcoelho/firestore-model",
+  "version": "0.0.1",
+  "description": "Database models for Firebase Firestore. Inspired by Laravel Eloquent.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Guilherme Freitas Coelho",
+  "license": "MIT"
+}
