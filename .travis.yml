@@ -5,11 +5,11 @@ node_js:
 install:
   - npm install
 
-# before_script:
-#   - firebase setup:emulators:firestore
+before_script:
+  - export FIREBASE=./node_modules/.bin/firebase
 
 script:
-  - firebase \
+  - $FIREBASE \
     emulators:exec \
     --only firestore \
     "npm run test"
