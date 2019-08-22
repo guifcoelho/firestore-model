@@ -1,7 +1,7 @@
 {
   "name": "@guifcoelho/firestore-model",
   "repository": "guifcoelho/firestore-model",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Database models for Firebase Firestore. Inspired by Laravel Eloquent.",
   "main": "index.js",
   "author": "Guilherme Freitas Coelho",
@@ -10,8 +10,6 @@
     "node": "8"
   },
   "devDependencies": {
-    "@firebase/testing": "0.12.0",
-    "link-module-alias": "^1.2.0",
     "mocha": "^6.2.0",
     "dotenv": "^8.1.0"
   },
@@ -19,13 +17,6 @@
     "firebase": "^6.4.0"
   },
   "scripts": {
-    "postinstall": "npm run clear-alias && link-module-alias",
-    "clear-alias": "command -v link-module-alias && link-module-alias clean || true",
     "test": "mocha"
-  },
-  "_moduleAliases": {
-    "~root": ".",
-    "~src": "./src",
-    "~test": "test"
   }
 }
