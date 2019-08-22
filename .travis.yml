@@ -12,6 +12,5 @@ deploy:
   provider: npm
   email: $NPM_EMAIL
   api_key: $NPM_TOKEN
-  tag: next
   on:
     branch: master
