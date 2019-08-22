@@ -19,8 +19,7 @@
     "firebase": "^6.4.0"
   },
   "scripts": {
-    "preinstall": "npm run clear-alias",
-    "postinstall": "link-module-alias",
+    "postinstall": "npm run clear-alias && link-module-alias",
     "clear-alias": "command -v link-module-alias && link-module-alias clean || true",
     "test": "mocha"
   },
