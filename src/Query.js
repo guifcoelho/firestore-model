@@ -123,7 +123,7 @@ module.exports = class Query {
      * 
      * @returns {number}
      */
-    count(){
+    async count(){
         if(this.query.constructor.name == 'Query'){
             const querySnap = await this.query.get();
             return querySnap.size;
