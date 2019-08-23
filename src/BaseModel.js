@@ -1,4 +1,4 @@
-const firebase = require('./BootFirestore.js');
+require('firebase/firestore');
 const Query = require('./Query.js');
 const HasMany = require('./Relations/HasMany.js');
 
@@ -11,12 +11,13 @@ module.exports = class BaseModel{
      * @param {object} schema
      */
     constructor(
+        firebase = null,
         table,
         data = null,
         schema = null,
-        timestamps = false,
-        firebaseApp = null
+        timestamps = false
     ){
+        this.firebase = firebase;
         this.table = table;
         this.setCollection();
         this.schema = schema;
@@ -24,7 +25,6 @@ module.exports = class BaseModel{
         if(data != null){
             this.fill(data);
         }
-        this.firebase = firebaseApp == null ? firebase : firebaseApp;
     }
 
     static getConfig(){
