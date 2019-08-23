@@ -111,7 +111,7 @@ module.exports = class Query {
 
     /**
      * Limits the query for the given quantity
-     * @param {integer} quantity 
+     * @param {number} quantity 
      */
     async limit(quantity){
         this.query = await this.query.limit(quantity);
@@ -121,15 +121,19 @@ module.exports = class Query {
     /**
      * Returns the number of documents inside the collection
      * 
-     * @returns int
+     * @returns {number}
      */
     count(){
+        if(this.query.constructor.name == 'Query'){
+            const querySnap = await this.query.get();
+            return querySnap.size;
+        }
         return this.query.size;
     }
 
     /**
      * Inserts an element or collection to the database
-     * @param {*} data 
+     * @param {object|array} data 
      */
     async insert(data){
         if(Array.isArray(data)){

@@ -258,7 +258,7 @@ module.exports = class BaseModel{
      */
     async update(newData){
 
-        let data = this.compareSchemaWithDataForDatabase(this.schema, newData);
+        let data = this.constructor.compareSchemaWithDataForDatabase(this.schema, newData);
         let query = await this.constructor.find(this.data.id);
         const update = await query.update(this.constructor.prepareDataForDatabase(data));
         if(update){
