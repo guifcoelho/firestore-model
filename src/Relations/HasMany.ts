@@ -1,18 +1,25 @@
-module.exports = class HasMany {
+import Query from '../Query'
 
-    constructor(child_class, parent, field_in_child_models, field_in_parent){
+export default class HasMany {
+
+    protected child_class;
+    protected parent;
+    protected field_in_child_models;
+    protected field_in_parent;
+
+    constructor(child_class, parent, field_in_child_models:string, field_in_parent:string = 'ref'){
         
         this.child_class = child_class;
         this.parent = parent;
         this.field_in_child_models = field_in_child_models;
-        this.field_in_parent = field_in_parent == null ? 'ref' : field_in_parent;
+        this.field_in_parent = field_in_parent;
     }
 
-    getValueToQuery(){
+    getValueToQuery():string{
         return this.field_in_parent == 'ref' ? this.parent.getRef() : this.parent.getData()[this.field_in_parent];
     }
 
-    query(){
+    query():Query{
         return this.child_class.where(this.field_in_child_models, '==', this.getValueToQuery());
     }
 
@@ -26,7 +33,7 @@ module.exports = class HasMany {
         return query.get();
     }
 
-    async orderBy(attribute, order = 'asc'){
+    async orderBy(attribute:string, order:string = 'asc'){
         const query = await this.query();
         return await query.orderBy(attribute, order);
     }

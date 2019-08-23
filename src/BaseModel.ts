@@ -1,8 +1,16 @@
-const {firebase, firestore} = require('./BootFirestore.js');
-const Query = require('./Query.js');
-const HasMany = require('./Relations/HasMany.js');
+import {firebase, firestore} from './BootFirestore.js'
+import Query from './Query.js'
+import HasMany from './Relations/HasMany.js'
 
-module.exports = class BaseModel{
+export default class BaseModel{
+
+    ['constructor']: typeof BaseModel;
+
+    protected table: string;
+    protected data;
+    protected schema: object;
+    protected timestamps: boolean;
+    protected collection;
 
     /**
      * Instanciates a new BaseModel
@@ -11,9 +19,9 @@ module.exports = class BaseModel{
      * @param {object} schema
      */
     constructor(
-        table,
-        data = null,
-        schema = null,
+        table: string = "",
+        data: object = null,
+        schema: object = null,
         timestamps = false
     ){
         this.table = table;
@@ -79,8 +87,6 @@ module.exports = class BaseModel{
 
     /**
      * Sets the collection reference of the model
-     * 
-     * @returns `void`
      */
     setCollection(){
         this.collection = firestore.collection(this.table);
@@ -94,7 +100,7 @@ module.exports = class BaseModel{
      * @param {*} value 
      * @param {string} client_server_any
      */
-    static checkSchemaType(schema, value, client_server_any = 'any'){
+    static checkSchemaType(schema, value, client_server_any:string = 'any'){
         if(value == null || value == undefined){
             return schema.nullable;
         }
@@ -121,9 +127,9 @@ module.exports = class BaseModel{
     prepareModelData(documentSnapshot){
         let incoming = documentSnapshot.data();
 
-        let data = {};
+        let data;
         for(let key in incoming){
-            if(typeof incoming[key] == "object" && incoming[key] != null & incoming[key] != undefined){
+            if(typeof incoming[key] == "object" && incoming[key] != null && incoming[key] != undefined){
                 
                 if(incoming[key].constructor.name == 'Timestamp'){
                     incoming[key] = incoming[key].toDate();
@@ -198,16 +204,16 @@ module.exports = class BaseModel{
      * 
      * @returns `Promise<FirestoreModel.Query>`
      */
-    static where(field, sign, value){
+    static where(field:string, sign:string, value){
         let queryObj = new Query(this);
         return queryObj.where(field, sign, value);
     }
 
     /**
      * Finds data by its id
-     * @param {*} id 
+     * @param {string|number} id 
      */
-    static find(id){
+    static find(id:string|number){
         let queryObj = new Query(this);
         return queryObj.find(id);
     }
@@ -257,8 +263,8 @@ module.exports = class BaseModel{
      * @param {object} newData 
      */
     async update(newData){
-
-        let data = this.compareSchemaWithDataForDatabase(this.schema, newData);
+        
+        let data = this.constructor.compareSchemaWithDataForDatabase(this.schema, newData);
         let query = await this.constructor.find(this.data.id);
         const update = await query.update(this.constructor.prepareDataForDatabase(data));
         if(update){
@@ -295,9 +301,9 @@ module.exports = class BaseModel{
      */
     static async count(){
         let query = await this.whereAll();
-        query = query.getQuery();
-        query = await query.get();
-        return query.size;
+        let firestore_query = query.getQuery();
+        let querysnap = await firestore_query.get();
+        return querysnap.size;
     }
 
     /**

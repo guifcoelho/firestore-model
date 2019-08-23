@@ -1,6 +1,6 @@
 require('dotenv').config({ path: `${process.cwd()}/.env` });
 var assert = require('assert');
-const BaseModel = require('../src/BaseModel.js');
+const BaseModel = require('../');
 
 describe('FirestoreModel', function() {
   describe('BaseModel', function() {

@@ -1,5 +1,10 @@
+declare var process : { 
+    firebase,
+    env: { [key: string]: string; }
+}
+
 const firebase = process.hasOwnProperty('firebase') ? process.firebase : require('firebase/app');
-require('firebase/firestore');
+import 'firebase/firestore';
 
 if (!firebase.apps.length) {
     firebase.initializeApp({
@@ -8,7 +13,5 @@ if (!firebase.apps.length) {
         authDomain: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseapp.com`
     });
 }
-module.exports = {
-    firebase,
-    firestore: firebase.firestore()
-};
+export { firebase };
+export const firestore = firebase.firestore();

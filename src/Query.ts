@@ -1,5 +1,10 @@
-module.exports = class Query {
+import {Query as FirestoreQuery} from '@firebase/firestore-types';
 
+export default class Query {
+
+    protected model;
+    protected model_class;
+    protected query;
     /**
      * Instanciates a new Query object
      * @param {*} model_class Instance of `BaseModel`
@@ -13,7 +18,7 @@ module.exports = class Query {
     /**
      * Returns the Firestore query instance
      */
-    getQuery(){
+    getQuery():FirestoreQuery{
         return this.query;
     }
 
@@ -23,7 +28,7 @@ module.exports = class Query {
      * @param {string} sign 
      * @param {*} value 
      */
-    async where(field, sign, value){
+    async where(field:string, sign:string, value){
         if(this.query == null){
             this.query = await this.model.getCollection().where(field, sign, value);
         }else{
@@ -32,7 +37,11 @@ module.exports = class Query {
         return this;
     }
 
-    async find(id){
+    /**
+     * Queries based on id
+     * @param {string|number} id 
+     */
+    async find(id:string|number){
         this.query = await this.model.getCollection().doc(id);
         return this;
     }
@@ -104,16 +113,16 @@ module.exports = class Query {
      * @param {string} attribute 
      * @param {string} order 
      */
-    async orderBy(attribute, order = 'asc'){
+    async orderBy(attribute:string, order:string = 'asc'){
         this.query = await this.query.orderBy(attribute, order);
         return this;
     }
 
     /**
      * Limits the query for the given quantity
-     * @param {integer} quantity 
+     * @param {number} quantity 
      */
-    async limit(quantity){
+    async limit(quantity:number){
         this.query = await this.query.limit(quantity);
         return this;
     }
@@ -121,17 +130,17 @@ module.exports = class Query {
     /**
      * Returns the number of documents inside the collection
      * 
-     * @returns int
+     * @returns {number}
      */
-    count(){
+    count():number{
         return this.query.size;
     }
 
     /**
      * Inserts an element or collection to the database
-     * @param {*} data 
+     * @param {object|any[]} data 
      */
-    async insert(data){
+    async insert(data: object|any[]){
         if(Array.isArray(data)){
             const self = this;
             return data.map(async item=>{
@@ -165,7 +174,11 @@ module.exports = class Query {
         return error == null;
     }
 
-    async update(newData){
+    /**
+     * Updates database with new data
+     * @param {object} newData 
+     */
+    async update(newData:object){
         let error = null;
         await this.query.update(newData).catch(e=>error = e);
         return error == null;
