@@ -8,7 +8,4 @@ if (!firebase.apps.length) {
         authDomain: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseapp.com`
     });
 }
-module.exports = {
-    firebase,
-    firestore: firebase.firestore()
-};
+module.exports = firebase;

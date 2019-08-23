@@ -1,4 +1,4 @@
-const {firebase, firestore} = require('./BootFirestore.js');
+const firebase = require('./BootFirestore.js');
 const Query = require('./Query.js');
 const HasMany = require('./Relations/HasMany.js');
 
@@ -14,7 +14,8 @@ module.exports = class BaseModel{
         table,
         data = null,
         schema = null,
-        timestamps = false
+        timestamps = false,
+        firebaseApp = null
     ){
         this.table = table;
         this.setCollection();
@@ -23,6 +24,7 @@ module.exports = class BaseModel{
         if(data != null){
             this.fill(data);
         }
+        this.firebase = firebaseApp == null ? firebase : firebaseApp;
     }
 
     static getConfig(){
@@ -83,7 +85,7 @@ module.exports = class BaseModel{
      * @returns `void`
      */
     setCollection(){
-        this.collection = firestore.collection(this.table);
+        this.collection = this.firebase.firestore().collection(this.table);
         return this;
     }
 
@@ -164,8 +166,8 @@ module.exports = class BaseModel{
                 }else{
                     const createTime = documentSnapshot._document.proto.createTime;
                     const updateTime = documentSnapshot._document.proto.updateTime;
-                    data.created_at = (new firebase.firestore.Timestamp(createTime.seconds, createTime.nanos)).toDate();
-                    data.updated_at = (new firebase.firestore.Timestamp(updateTime.seconds, updateTime.nanos)).toDate();
+                    data.created_at = (new this.firebase.firestore.Timestamp(createTime.seconds, createTime.nanos)).toDate();
+                    data.updated_at = (new this.firebase.firestore.Timestamp(updateTime.seconds, updateTime.nanos)).toDate();
                 }  
             }catch(e){
                 data.created_at = null;
@@ -241,7 +243,7 @@ module.exports = class BaseModel{
             if(typeof incomingData[key] == 'object' && incomingData[key] != null && incomingData[key] != undefined){
                 
                 if(incomingData[key].constructor.name == "Date"){
-                    incomingData[key] = firebase.firestore.Timestamp.fromDate(incomingData[key]);
+                    incomingData[key] = this.firebase.firestore.Timestamp.fromDate(incomingData[key]);
                 }
 
                 //Include other types...
