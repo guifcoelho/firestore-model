@@ -70,8 +70,10 @@ module.exports = class Query {
         let model = null;
         const self = this;
         if(this.query.constructor.name == 'DocumentReference'){
-            const doc = await this.query.get();
-            model = new self.model_class(doc);
+            const snap = await this.query.get();
+            if(snap.exists){
+                model = new self.model_class(snap);
+            }
         }else{  
             await this.query.limit(1).get()
                 .then(snap=>{

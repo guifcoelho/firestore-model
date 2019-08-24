@@ -1,11 +1,11 @@
 module.exports = class HasMany {
 
-    constructor(child_class, parent, field_in_child_models, field_in_parent){
+    constructor(child_class, parent, field_in_child_models, field_in_parent = 'ref'){
         
         this.child_class = child_class;
         this.parent = parent;
         this.field_in_child_models = field_in_child_models;
-        this.field_in_parent = field_in_parent == null ? 'ref' : field_in_parent;
+        this.field_in_parent = field_in_parent;
     }
 
     getValueToQuery(){
