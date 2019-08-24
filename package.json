@@ -1,7 +1,7 @@
 {
   "name": "@guifcoelho/firestore-model",
   "repository": "guifcoelho/firestore-model",
-  "version": "1.0.10",
+  "version": "1.0.13",
   "main": "src/index.js",
   "files": [
     "src"
@@ -13,6 +13,10 @@
     "node": ">=8"
   },
   "devDependencies": {
+    "@babel/cli": "^7.5.5",
+    "@babel/core": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "babel-preset-minify": "^0.5.1",
     "dotenv": "^8.1.0",
     "mocha": "^6.2.0"
   },
