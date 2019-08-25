@@ -6,20 +6,14 @@ module.exports = class BaseModel{
 
     /**
      * Instanciates a new BaseModel
+     * @param firebase
      * @param {string} table 
      * @param {object} data 
      * @param {object} schema
      */
-    constructor(
-        firebase = null,
-        table,
-        data = null,
-        schema = null,
-        timestamps = false
-    ){
+    constructor(firebase, table, data = null, schema = null, timestamps = false){
         this.firebase = firebase;
         this.table = table;
-        this.setCollection();
         this.schema = schema;
         this.timestamps = timestamps;
         if(data != null){
@@ -27,12 +21,23 @@ module.exports = class BaseModel{
         }
     }
 
-    static getConfig(){
-        const model = new this();
+    /**
+     * Return the model's collection reference
+     */
+    static get collection(){
+        const instance = new this();
+        return instance.firebase.firestore().collection(instance.table);
+    }
+
+    /**
+     * Return the model's configuration
+     */
+    static get config(){
+        const instance = new this();
         return {
-            table: model.table,
-            schema: model.schema,
-            timestamps: model.timestamps,
+            table: instance.table,
+            schema: instance.schema,
+            timestamps: instance.timestamps,
             //Add others...
         }
     }
@@ -42,26 +47,8 @@ module.exports = class BaseModel{
      * 
      * @returns `firebase.firestore.DocumentReference`
      */
-    getRef(){
+    get ref(){
         return this.collection.doc(this.data.id);
-    }
-
-    /**
-     * Returns the Firestore collection related to the model
-     * 
-     * @returns `firebase.firestore.CollectionReference`
-     */
-    getCollection(){
-        return this.collection;
-    }
-
-    /**
-     * Return the model data
-     * 
-     * @returns `object`
-     */
-    getData(){
-        return this.data;
     }
 
     /**
@@ -75,18 +62,11 @@ module.exports = class BaseModel{
         ){
             data = this.prepareModelData(data);
         }
-        this.data = data;
-        return this;
-    }
 
-    /**
-     * Sets the collection reference of the model
-     * 
-     * @returns `void`
-     */
-    setCollection(){
-        this.collection = this.firebase.firestore().collection(this.table);
-        return this;
+        const modelClass = this.constructor;
+        if(modelClass.compareSchemaWithData(modelClass.config, data, 'client')){
+            this.data = data;
+        }
     }
 
     /**
@@ -188,8 +168,7 @@ module.exports = class BaseModel{
      * @return `Promise<array>`
      */
     static all(){
-        let queryObj = new Query(this);
-        return queryObj.all();        
+        return (new Query(this)).all();
     }
 
     /**
@@ -201,8 +180,7 @@ module.exports = class BaseModel{
      * @returns `Promise<FirestoreModel.Query>`
      */
     static where(field, sign, value){
-        let queryObj = new Query(this);
-        return queryObj.where(field, sign, value);
+        return (new Query(this)).where(field, sign, value);
     }
 
     /**
@@ -210,25 +188,26 @@ module.exports = class BaseModel{
      * @param {*} id 
      */
     static find(id){
-        let queryObj = new Query(this);
-        return queryObj.find(id);
+        return new Query(this).find(id);
     }
 
-    static compareSchemaWithDataForDatabase(schema, incomingData){
+    static compareSchemaWithData(config, incomingData, client_server_any = "any"){
         let data = {};
+        const schema = config.schema;
+        const table = config.table;
         if(schema != null){
             for(let key in schema){
                 if(
                     !schema[key].nullable && 
                     (!incomingData.hasOwnProperty(key) || incomingData[key] == null || incomingData[key] == undefined)
                 ){
-                    throw new Error(`Key '${key}' in '${this.name}' is not nullable`);
+                    throw new Error(`Key '${key}' in '${table}' is not nullable`);
                 }
                 else if(schema[key].nullable && (!incomingData.hasOwnProperty(key) || incomingData[key] == null || incomingData[key] == undefined)){
                     data[key] = null;
                 }
-                else if(!this.checkSchemaType(schema[key], incomingData[key], 'server')){
-                    throw new Error(`compareSchemaWithDataForDatabase: Value '${key}:${incomingData[key]}' in '${this.name}' is not '${schema[key].type}'`);
+                else if(!this.checkSchemaType(schema[key], incomingData[key], client_server_any)){
+                    throw new Error(`compareSchemaWithData: Value '${key}:${incomingData[key]}' in '${table}' is not '${schema[key].type}'`);
                 }else{
                     data[key] = incomingData[key];
                 }
@@ -259,24 +238,23 @@ module.exports = class BaseModel{
      * @param {object} newData 
      */
     async update(newData){
-
-        let data = this.constructor.compareSchemaWithDataForDatabase(this.schema, newData);
-        let query = await this.constructor.find(this.data.id);
-        const update = await query.update(this.constructor.prepareDataForDatabase(data));
+        const modelClass = this.constructor;
+        newData = modelClass.compareSchemaWithData(modelClass.config, newData, 'server');
+        let query = await modelClass.find(this.data.id);
+        const update = await query.update(modelClass.prepareDataForDatabase(newData));
         if(update){
-            for(const prop in data){
-                this.data[prop] = data[prop];
-            }
+            return new modelClass({
+                id: this.data.id,
+                ...newData
+            });
         }
-        return this;
     }
 
     /**
      * Queries all data from database
      */
     static whereAll(){
-        let queryObj = new Query(this);
-        return queryObj.whereAll();
+        return (new Query(this)).whereAll();
     }
 
     /**
@@ -284,10 +262,8 @@ module.exports = class BaseModel{
      * @param {object} newData 
      */
     static async createNew(newData){
-
-        let data = this.compareSchemaWithDataForDatabase(this.getConfig().schema, newData);
-        let queryObj = new Query(this);
-        return await queryObj.insert(this.prepareDataForDatabase(data));
+        newData = this.compareSchemaWithData(this.config.schema, newData, 'server');
+        return await (new Query(this)).insert(this.prepareDataForDatabase(newData));
     }
 
     /**
