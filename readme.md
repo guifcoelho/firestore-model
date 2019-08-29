@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/guifcoelho/firestore-model.svg?branch=master)](https://travis-ci.com/guifcoelho/firestore-model)
+
 # Firestore Model
 
 Database models for Firebase Firestore in Javascript. Create model classes with little configuration.
