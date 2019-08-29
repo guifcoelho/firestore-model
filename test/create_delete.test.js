@@ -1,9 +1,10 @@
 var assert = require('assert');
 const DummyItemModel = require('./models/DummyItemModel.js');
 const DummyModel = require('./models/DummyModel.js');
+const UniqueFieldModel = require('./models/UniqueFieldModel.js');
 const firebase = require('./functions/firebase.js');
 
-describe('Create model', () => {
+describe('Create/update model', () => {
 
     it("should write to database and return valid models", async () => {
         const dummy_item = await DummyItemModel.createNew({
@@ -22,10 +23,6 @@ describe('Create model', () => {
         assert.equal(item.data.id, dummy_item.data.id);
     });
 
-});
-
-describe('Update model', ()=>{
-
     it('should update existing model', async ()=>{
 
         const title = `Dummy item title: ${(new Date()).toString()}`;
@@ -42,7 +39,7 @@ describe('Update model', ()=>{
         const updated_dummy_item = await query.first();
         assert.equal(updated_dummy_item.data.title, dummy_item.data.title);
 
-    })
+    });
 
 });
 
@@ -59,6 +56,58 @@ describe('Delete model', () => {
         const query = DummyItemModel.find(dummy_item.data.id);
         const model = await query.first();
         assert.equal(model, null);
+    });
+
+});
+
+describe('Create/update with unique fields', () => {
+
+    it('should not create with unique fields', async () => {
+        const query_all = UniqueFieldModel.whereAll();
+        const query_delete = await query_all.delete();
+        assert.equal(query_delete, true);
+
+        await UniqueFieldModel.createNew({email: 'email@email.com'});
+        
+        try{
+            await UniqueFieldModel.createNew({email: 'email@email.com'});
+            assert.equal(true, false);
+        }catch(e){
+            assert.equal(e instanceof Error, true);
+            assert.equal(
+                e.message,
+                "BaseModel::checkUniqueFields(...) | Breaking unique constraints with 'email:email@email.com' in table 'unique_field'"
+            );
+        }
+        
+    });
+
+    it('should not update with unique fields', async () => {
+        const query_all = UniqueFieldModel.whereAll();
+        const query_delete = await query_all.delete();
+        assert.equal(query_delete, true);
+
+        const models = await Promise.all(
+            [
+                {email: 'email@email.com'},
+                {email: 'email_2@email.com'}
+            ]
+            .map(item=>{
+                return UniqueFieldModel.createNew(item);
+            })
+        );
+
+        try{
+            let model1 = models[0];
+            await model1.update({email: 'email_2@email.com'});
+            assert.equal(true, false);
+        }catch(e){
+            assert.equal(e instanceof Error, true);
+            assert.equal(
+                e.message,
+                "BaseModel::checkUniqueFields(...) | Breaking unique constraints with 'email:email_2@email.com' in table 'unique_field'"
+            );
+        }
     });
 
 });

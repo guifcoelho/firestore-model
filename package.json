@@ -1,7 +1,7 @@
 {
   "name": "@guifcoelho/firestore-model",
   "repository": "guifcoelho/firestore-model",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "src/index.js",
   "files": [
     "src"

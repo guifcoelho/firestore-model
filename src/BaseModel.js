@@ -229,6 +229,22 @@ module.exports = class BaseModel{
         return incomingData;
     }
 
+
+    async checkUniqueFields(data){
+        if(this.schema){
+            for(let key in this.schema){
+                if(this.schema[key].hasOwnProperty('unique') && this.schema[key].unique && data.hasOwnProperty(key)){
+                    const query = this.constructor.where(key, '==', data[key]);
+                    const query_first = await query.first();
+                    if(query_first){
+                        throw new Error(`BaseModel::checkUniqueFields(...) | Breaking unique constraints with '${key}:${data[key]}' in table '${this.table}'`);
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     /**
      * Updates the database with new data
      * 
@@ -241,11 +257,14 @@ module.exports = class BaseModel{
         if(model){
             let data = await this.prepareDataForDatabase(newData);
             data = this.compareSchemaWithData(data, true);
-            const update = await query.update(data);
-            if(update){
-                for(let prop in this.data){
-                    if(data.hasOwnProperty(prop)){
-                        this.data[prop] = data[prop];
+            const check_unique = await model.checkUniqueFields(data);
+            if(check_unique){
+                const update = await query.update(data);
+                if(update){
+                    for(let prop in this.data){
+                        if(data.hasOwnProperty(prop)){
+                            this.data[prop] = data[prop];
+                        }
                     }
                 }
                 return true;
@@ -270,7 +289,8 @@ module.exports = class BaseModel{
         const model = new this();
         let data = await model.prepareDataForDatabase(newData);
         data = model.compareSchemaWithData(newData);
-        return await (new Query(this)).insert(data);
+        const check_unique = await model.checkUniqueFields(data);
+        return check_unique ? await (new Query(this)).insert(data) : false;
     }
 
     async delete(){
