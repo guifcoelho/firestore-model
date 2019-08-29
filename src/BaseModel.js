@@ -10,10 +10,12 @@ module.exports = class BaseModel{
      * @param {string} table 
      * @param {object} data 
      * @param {object} schema
+     * @param {boolean} timestamps
      */
     constructor(firebase, table, data = null, schema = null, timestamps = false){
         this.firebase = firebase;
         this.table = table;
+        this.collection = firebase.firestore().collection(table);
         this.schema = schema;
         this.timestamps = timestamps;
         if(data != null){
@@ -22,32 +24,23 @@ module.exports = class BaseModel{
     }
 
     /**
-     * Return the model's collection reference
+     * Returns the model's configuration
      */
-    static get collection(){
-        const instance = new this();
-        return instance.firebase.firestore().collection(instance.table);
-    }
-
-    /**
-     * Return the model's configuration
-     */
-    static get config(){
-        const instance = new this();
+    get config(){
         return {
-            table: instance.table,
-            schema: instance.schema,
-            timestamps: instance.timestamps,
+            table: this.table,
+            schema: this.schema,
+            timestamps: this.timestamps,
             //Add others...
         }
     }
 
     /**
-     * Returns the documento reference from Firestore
+     * Returns the document reference from Firestore
      * 
      * @returns `firebase.firestore.DocumentReference`
      */
-    get ref(){
+    get DocumentReference(){
         return this.collection.doc(this.data.id);
     }
 
@@ -56,72 +49,57 @@ module.exports = class BaseModel{
      * @param {object} data 
      */
     fill(data){
-        if(
-            data.constructor.name == 'DocumentSnapshot' ||
-            data.constructor.name == 'QueryDocumentSnapshot'
-        ){
-            data = this.prepareModelData(data);
-        }
-
-        const modelClass = this.constructor;
-        if(modelClass.compareSchemaWithData(modelClass.config, data, 'client')){
-            this.data = data;
+        if( data instanceof this.firebase.firestore.DocumentSnapshot || data instanceof this.firebase.firestore.QueryDocumentSnapshot ){
+            this.data = this.prepareModelData(data);
+        }else{
+            if(this.compareSchemaWithData(data)){
+                this.data = data;
+            }
         }
     }
 
     /**
-     * Verifies the given data with the types defined in the schema
+     * Verifies a value with its related schema
      * 
      * @param {object} schema
-     * @param {*} value 
-     * @param {string} client_server_any
+     * @param {*} value
      */
-    static checkSchemaType(schema, value, client_server_any = 'any'){
+    checkSchemaType(schema, value){
         if(value == null || value == undefined){
             return schema.nullable;
         }
         if(schema.hasOwnProperty('type')){
-            let type = schema.type.split("|");
-            switch(client_server_any){
-                case 'client': type = [type[0]]; break;
-                case 'server': type = [type[Math.min(type.length-1, 1)]]; break;
+            if(typeof value == 'object'){
+                return value instanceof schema.type;
             }
-            const check = type.map(el => {
-                if(typeof value == 'object'){
-                    return value.constructor.name == el;
-                }
-                return typeof value == el;
-            });          
-            return check.find(e=>e);
+            return typeof value == schema.type;
         }
     }
 
     /**
      * Converts the DocumentSnapshot to readable data
-     * @param {DocumentSnapshot} documentSnapshot 
+     * @param {firebase.firestore.DocumentSnapshot} documentSnapshot 
      */
     prepareModelData(documentSnapshot){
         let incoming = documentSnapshot.data();
 
         let data = {};
         for(let key in incoming){
-            if(typeof incoming[key] == "object" && incoming[key] != null & incoming[key] != undefined){
-                
-                if(incoming[key].constructor.name == 'Timestamp'){
-                    incoming[key] = incoming[key].toDate();
-                }
-                if(incoming[key].constructor.name == 'DocumentReference'){
-                    incoming[key] = incoming[key].id;
-                }
-            }
 
             //If schema is null, it will accept anything
             //If schema is not null, it will check if key is in schema and its type
             if(this.schema == null || this.schema.hasOwnProperty(key)){
-                if(!this.constructor.checkSchemaType(this.schema[key], incoming[key], 'client')){
-                    throw new Error(`prepareModelData: Value '${key}:${incoming[key]}' in '${this.constructor.name}' is not '${this.schema[key].type}'`);
+                if(!this.checkSchemaType(this.schema[key], incoming[key])){
+                    throw new Error(`BaseModel::prepareModelData(): Value '${key}:${incoming[key]}' in '${this.table}' is not '${this.schema[key].type}'`);
                 }else{
-                    data[key] = incoming[key];
+                    if(incoming[key] instanceof this.firebase.firestore.DocumentReference && this.schema[key].hasOwnProperty('modelClass')){  
+                        data[key] = new Query(this.schema[key].modelClass, incoming[key]);
+                    }
+                    else if(incoming[key] instanceof Date){
+                        data[key] = incoming[key].toDate();
+                    }else{
+                        data[key] = incoming[key];
+                    }
                 }
             }         
         }
@@ -131,7 +109,7 @@ module.exports = class BaseModel{
             for(let key in this.schema){
                 if(!data.hasOwnProperty(key)){
                     if(!this.schema[key].hasOwnProperty('nullable') || !this.schema[key].nullable){
-                        throw new Error(`prepareModelData: Key '${key}' in '${this.constructor.name}' is not nullable`);
+                        throw new Error(`BaseModel::prepareModelData(): Key '${key}' in '${this.table}' is not nullable`);
                     }
                     data[key] = null;
                 }
@@ -160,94 +138,120 @@ module.exports = class BaseModel{
         return data;
     }
 
-    
-
     /**
-     * Returns an array of all items in the collection
-     * 
-     * @return `Promise<array>`
+     * Compares the schema with the some data
+     * @param {object} incomingData 
+     * @param {boolean} partial 
+     * @returns {object}
      */
-    static all(){
-        return (new Query(this)).all();
-    }
-
-    /**
-     * Queries the database against the provided condition
-     * @param {string} field 
-     * @param {string} sign 
-     * @param {*} value 
-     * 
-     * @returns `Promise<FirestoreModel.Query>`
-     */
-    static where(field, sign, value){
-        return (new Query(this)).where(field, sign, value);
-    }
-
-    /**
-     * Finds data by its id
-     * @param {*} id 
-     */
-    static find(id){
-        return new Query(this).find(id);
-    }
-
-    static compareSchemaWithData(config, incomingData, client_server_any = "any"){
+    compareSchemaWithData(incomingData, partial = false){
         let data = {};
-        const schema = config.schema;
-        const table = config.table;
-        if(schema != null){
-            for(let key in schema){
-                if(
-                    !schema[key].nullable && 
-                    (!incomingData.hasOwnProperty(key) || incomingData[key] == null || incomingData[key] == undefined)
-                ){
-                    throw new Error(`Key '${key}' in '${table}' is not nullable`);
+
+        if(this.schema != null){
+            if(partial){
+                for(let key in incomingData){
+                    if(!this.schema.hasOwnProperty(key)){
+                        throw new Error(`BaseModel::compareSchemaWithData() | Attribute '${key}' is not allowed in table '${this.table}'`);
+                    }else if(!this.checkSchemaType(this.schema[key], incomingData[key])){
+                        throw new Error(`BaseModel::compareSchemaWithData() | Value '${key}:${incomingData[key]}' in table '${this.table}' is not '${this.schema[key].type}'`);                        
+                    }else{
+                        data[key] = incomingData[key];
+                    }
                 }
-                else if(schema[key].nullable && (!incomingData.hasOwnProperty(key) || incomingData[key] == null || incomingData[key] == undefined)){
-                    data[key] = null;
-                }
-                else if(!this.checkSchemaType(schema[key], incomingData[key], client_server_any)){
-                    throw new Error(`compareSchemaWithData: Value '${key}:${incomingData[key]}' in '${table}' is not '${schema[key].type}'`);
-                }else{
-                    data[key] = incomingData[key];
+            }else{
+                for(let key in this.config.schema){
+                    
+                    if(
+                        !this.schema[key].nullable && 
+                        (!incomingData.hasOwnProperty(key) || incomingData[key] == null || incomingData[key] == undefined)
+                    ){
+                        throw new Error(`Key '${key}' in table '${this.table}' is not nullable`);
+                    }
+                    else if(this.schema[key].nullable && (!incomingData.hasOwnProperty(key) || incomingData[key] == null || incomingData[key] == undefined)){
+                        data[key] = null;
+                    }
+                    else if(!this.checkSchemaType(this.schema[key], incomingData[key])){
+                        throw new Error(`BaseModel::compareSchemaWithData(): Value '${key}:${incomingData[key]}' in table '${this.table}' is not '${this.schema[key].type}'`);
+                    }else{
+                        data[key] = incomingData[key];
+                    }
                 }
             }
         }
         return data;
     }
 
+    
+    /**
+     * Returns an array of all items in the collection
+     */
+    static all(){
+        return (new Query(this)).all();
+    }
 
-    static prepareDataForDatabase(incomingData){
+    /**
+     * Queries the database against some condition
+     * @param {string} field 
+     * @param {string} sign 
+     * @param {*} value 
+     */
+    static where(field, sign, value){
+        return (new Query(this)).where(field, sign, value);
+    }
+
+    /**
+     * Finds a database object by its id
+     * @param {number|string} id
+     */
+    static find(id){
+        return (new Query(this)).find(id);
+    }
+
+    /**
+     * Prepares data to be inserted in the database
+     * @param {object} incomingData
+     * @returns {object}
+     */
+    async prepareDataForDatabase(incomingData){
         for(let key in incomingData){
             if(typeof incomingData[key] == 'object' && incomingData[key] != null && incomingData[key] != undefined){
                 
-                if(incomingData[key].constructor.name == "Date"){
+                if(incomingData[key] instanceof Date){
                     incomingData[key] = this.firebase.firestore.Timestamp.fromDate(incomingData[key]);
+                }else if(incomingData[key] instanceof Query && incomingData[key].query instanceof this.firebase.firestore.DocumentReference){
+                    incomingData[key] = incomingData[key].query;
+                }else if(incomingData[key] instanceof BaseModel){
+                    incomingData[key] = await incomingData[key].DocumentReference;
                 }
-
                 //Include other types...
-
-
             }
         }
         return incomingData;
     }
 
     /**
-     * Updates database with new data
-     * @param {object} newData 
+     * Updates the database with new data
+     * 
+     * @param {object} newData
+     * @returns {this|false} false is errored and this if ok
      */
     async update(newData){
-        const modelClass = this.constructor;
-        newData = modelClass.compareSchemaWithData(modelClass.config, newData, 'server');
-        let query = await modelClass.find(this.data.id);
-        const update = await query.update(modelClass.prepareDataForDatabase(newData));
-        if(update){
-            return new modelClass({
-                id: this.data.id,
-                ...newData
-            });
+        const query = await (new Query(this.constructor)).find(this.data.id);
+        const model = await query.first();
+        if(model){
+            let data = await this.prepareDataForDatabase(newData);
+            data = this.compareSchemaWithData(data, true);
+            const update = await query.update(data);
+            if(update){
+                for(let prop in this.data){
+                    if(data.hasOwnProperty(prop)){
+                        this.data[prop] = data[prop];
+                    }
+                }
+                return true;
+            }
         }
+        return false;
     }
 
     /**
@@ -259,23 +263,34 @@ module.exports = class BaseModel{
 
     /**
      * Creates a new registry in the database
-     * @param {object} newData 
+     * @param {object} newData
+     * @returns {*} instance of `FirestoreModel.BaseModel`
      */
     static async createNew(newData){
-        newData = this.compareSchemaWithData(this.config.schema, newData, 'server');
-        return await (new Query(this)).insert(this.prepareDataForDatabase(newData));
+        const model = new this();
+        let data = await model.prepareDataForDatabase(newData);
+        data = model.compareSchemaWithData(newData);
+        return await (new Query(this)).insert(data);
+    }
+
+    async delete(){
+        try{
+            await (new Query(this.constructor, this.DocumentReference)).delete();
+            return true;
+        }catch(e){
+            return false;
+        }
     }
 
     /**
      * Returns the number of documents inside the collection
      * 
-     * @returns int
+     * @returns {number} integer
      */
     static async count(){
-        let query = await this.whereAll();
-        query = query.getQuery();
-        query = await query.get();
-        return query.size;
+        const model = new this();
+        const collRef = model.collection;
+        return await (new Query(this, collRef)).count();
     }
 
     /**

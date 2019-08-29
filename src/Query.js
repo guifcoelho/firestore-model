@@ -4,17 +4,10 @@ module.exports = class Query {
      * Instanciates a new Query object
      * @param {*} model_class Instance of `BaseModel`
      */
-    constructor(model_class){
+    constructor(model_class, query = null){
         this.model = new model_class();
         this.model_class = model_class;
-        this.query = null;
-    }
-
-    /**
-     * Returns the Firestore query instance
-     */
-    getQuery(){
-        return this.query;
+        this.query = query;
     }
 
     /**
@@ -23,17 +16,21 @@ module.exports = class Query {
      * @param {string} sign 
      * @param {*} value 
      */
-    async where(field, sign, value){
+    where(field, sign, value){
         if(this.query == null){
-            this.query = await this.model.getCollection().where(field, sign, value);
+            this.query = this.model.collection.where(field, sign, value);
         }else{
-            this.query = await this.query.where(field, sign, value);
+            this.query = this.query.where(field, sign, value);
         }
         return this;
     }
 
-    async find(id){
-        this.query = await this.model.getCollection().doc(id);
+    /**
+     * Search for a document with the given id
+     * @param {string|number} id 
+     */
+    find(id){
+        this.query = this.model.collection.doc(id);
         return this;
     }
 
@@ -42,9 +39,19 @@ module.exports = class Query {
      * 
      * @returns `FirestoreModel.Query`
      */
-    async whereAll(){
-        this.query = await this.model.getCollection();
+    whereAll(){
+        this.query = this.model.collection;
         return this;
+    }
+
+    /**
+     * Returns the number of documents inside the collection
+     * 
+     * @returns {Promise<number>}
+     */
+    async count(){
+        const querySnap = await this.query.get();
+        return querySnap.size;
     }
 
     /**
@@ -53,7 +60,7 @@ module.exports = class Query {
     async all(){
         let arrayOfModels = [];
         const self = this;
-        await (new this.model_class()).getCollection()
+        await model.collection
             .get()
             .then(query=>{
                 query.forEach(async el=>{
@@ -138,42 +145,54 @@ module.exports = class Query {
      * @param {object|array} data 
      */
     async insert(data){
+        const model_class = this.model_class;
+        const collection = this.model.collection;
         if(Array.isArray(data)){
-            const self = this;
             return data.map(async item=>{
-                const docRef = await self.model.getCollection().add(item);
+                const docRef = await collection.add(item);
                 const docSnap = await docRef.get();
-                let model = new self.model_class();
-                return model.fill(docSnap);  
+                return new model_class(docSnap);
             })
         }
-        const docRef = await this.model.getCollection().add(data);
+        const docRef = await collection.add(data);
         const docSnap = await docRef.get();
-        let model = new this.model_class();
-        return model.fill(docSnap);
+        return new model_class(docSnap);
     }
 
     /**
-     * Deletes all documents from query
+     * Deletes all documents from query.
+     * 
+     * @returns {boolean}
      */
-    async delete(){
-        let error = null;
-        if(this.query.constructor.name == 'DocumentReference'){
-            await this.query.delete().catch(e => error = e);
-        }else{
-            const querySnap = await this.query.get();
-            return await Promise.all(
-                querySnap.forEach(el=>{
-                    el.delete();
-                })
-            );
+    async delete(batch = null){
+        try{
+            if(this.query.constructor.name == 'DocumentReference'){
+                await this.query.delete();
+            }else{
+                const querySnap = await this.query.get();
+                await Promise.all(
+                    querySnap.docs.map(item=>{
+                        item.ref.delete();
+                    })
+                );
+            }
+            return true;
+        }catch(e){
+            return false;
         }
-        return error == null;
     }
 
+    /**
+     * Updates a document with new data
+     * @param {*} newData 
+     * @returns {boolean}
+     */
     async update(newData){
-        let error = null;
-        await this.query.update(newData).catch(e=>error = e);
-        return error == null;
+        try{
+            await this.query.update(newData);
+            return true;
+        }catch(e){
+            return false;
+        }
     }
 };
