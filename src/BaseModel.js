@@ -1,4 +1,4 @@
-require('firebase/firestore');
+const firebase = require('firebase/app');
 const Query = require('./Query.js');
 const HasMany = require('./Relations/HasMany.js');
 
@@ -6,16 +6,17 @@ module.exports = class BaseModel{
 
     /**
      * Instanciates a new BaseModel
-     * @param firebase
+     * @param {firebase.firestore.Firestore} database
      * @param {string} table 
      * @param {object} data 
      * @param {object} schema
      * @param {boolean} timestamps
      */
-    constructor(firebase, table, data = null, schema = null, timestamps = false){
-        this.firebase = firebase;
+    constructor(
+        database, table, data = null, schema = null, timestamps = false){
+        // this.firebase = firebaseApp;
         this.table = table;
-        this.collection = firebase.firestore().collection(table);
+        this.collection = database.collection(table);
         this.schema = schema;
         this.timestamps = timestamps;
         if(data != null){
@@ -49,7 +50,7 @@ module.exports = class BaseModel{
      * @param {object} data 
      */
     fill(data){
-        if( data instanceof this.firebase.firestore.DocumentSnapshot || data instanceof this.firebase.firestore.QueryDocumentSnapshot ){
+        if( data instanceof firebase.firestore.DocumentSnapshot || data instanceof firebase.firestore.QueryDocumentSnapshot ){
             this.data = this.prepareModelData(data);
         }else{
             if(this.compareSchemaWithData(data)){
@@ -92,7 +93,7 @@ module.exports = class BaseModel{
                 if(!this.checkSchemaType(this.schema[key], incoming[key])){
                     throw new Error(`BaseModel::prepareModelData(): Value '${key}:${incoming[key]}' in '${this.table}' is not '${this.schema[key].type}'`);
                 }else{
-                    if(incoming[key] instanceof this.firebase.firestore.DocumentReference && this.schema[key].hasOwnProperty('modelClass')){  
+                    if(incoming[key] instanceof firebase.firestore.DocumentReference && this.schema[key].hasOwnProperty('modelClass')){  
                         data[key] = new Query(this.schema[key].modelClass, incoming[key]);
                     }
                     else if(incoming[key] instanceof Date){
@@ -124,8 +125,8 @@ module.exports = class BaseModel{
                 }else{
                     const createTime = documentSnapshot._document.proto.createTime;
                     const updateTime = documentSnapshot._document.proto.updateTime;
-                    data.created_at = (new this.firebase.firestore.Timestamp(createTime.seconds, createTime.nanos)).toDate();
-                    data.updated_at = (new this.firebase.firestore.Timestamp(updateTime.seconds, updateTime.nanos)).toDate();
+                    data.created_at = (new firebase.firestore.Timestamp(createTime.seconds, createTime.nanos)).toDate();
+                    data.updated_at = (new firebase.firestore.Timestamp(updateTime.seconds, updateTime.nanos)).toDate();
                 }  
             }catch(e){
                 data.created_at = null;
@@ -193,7 +194,7 @@ module.exports = class BaseModel{
      * Queries the database against some condition
      * @param {string} field 
      * @param {string} sign 
-     * @param {*} value 
+     * @param {*} value
      */
     static where(field, sign, value){
         return (new Query(this)).where(field, sign, value);
@@ -210,15 +211,15 @@ module.exports = class BaseModel{
     /**
      * Prepares data to be inserted in the database
      * @param {object} incomingData
-     * @returns {object}
+     * @returns {object} The prepared data
      */
     async prepareDataForDatabase(incomingData){
         for(let key in incomingData){
             if(typeof incomingData[key] == 'object' && incomingData[key] != null && incomingData[key] != undefined){
                 
                 if(incomingData[key] instanceof Date){
-                    incomingData[key] = this.firebase.firestore.Timestamp.fromDate(incomingData[key]);
-                }else if(incomingData[key] instanceof Query && incomingData[key].query instanceof this.firebase.firestore.DocumentReference){
+                    incomingData[key] = firebase.firestore.Timestamp.fromDate(incomingData[key]);
+                }else if(incomingData[key] instanceof Query && incomingData[key].query instanceof firebase.firestore.DocumentReference){
                     incomingData[key] = incomingData[key].query;
                 }else if(incomingData[key] instanceof BaseModel){
                     incomingData[key] = await incomingData[key].DocumentReference;
@@ -229,7 +230,12 @@ module.exports = class BaseModel{
         return incomingData;
     }
 
-
+    /**
+     * Checks if there are unique fields constraints. Throws exception if any constraint is broken.
+     * 
+     * @param {object} data
+     * @returns {true|void} True if it passes and `Error` if not
+     */
     async checkUniqueFields(data){
         if(this.schema){
             for(let key in this.schema){
@@ -249,7 +255,6 @@ module.exports = class BaseModel{
      * Updates the database with new data
      * 
      * @param {object} newData
-     * @returns {this|false} false is errored and this if ok
      */
     async update(newData){
         const query = await (new Query(this.constructor)).find(this.data.id);
@@ -293,6 +298,9 @@ module.exports = class BaseModel{
         return check_unique ? await (new Query(this)).insert(data) : false;
     }
 
+    /**
+     * Deletes the model
+     */
     async delete(){
         try{
             await (new Query(this.constructor, this.DocumentReference)).delete();
@@ -304,7 +312,6 @@ module.exports = class BaseModel{
 
     /**
      * Returns the number of documents inside the collection
-     * 
      * @returns {number} integer
      */
     static async count(){
@@ -318,8 +325,6 @@ module.exports = class BaseModel{
      * @param {*} child_class 
      * @param {string} field_in_child_models 
      * @param {string} field_in_this 
-     * 
-     * @returns `FirestoreModel.Relations.HasMany`
      */
     hasMany(child_class, field_in_child_models, field_in_this){
         return new HasMany(child_class, this, field_in_child_models, field_in_this);

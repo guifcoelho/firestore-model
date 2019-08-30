@@ -1,9 +1,10 @@
 const BaseModel = require('../../');
-const firebase = require('../functions/firebase.js');
+const {initDatabase} = require('../functions/firebase.js');
 
 module.exports = class UniqueFieldModel extends BaseModel {
 
     constructor(data){
+
         const table = "unique_field";
 
         const schema = {
@@ -12,7 +13,7 @@ module.exports = class UniqueFieldModel extends BaseModel {
 
         const timestamps = false;
         
-        super(firebase, table, data, schema, timestamps);
+        super(initDatabase(), table, data, schema, timestamps);
     }
 
 }

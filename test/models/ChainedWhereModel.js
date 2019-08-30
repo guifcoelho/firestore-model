@@ -1,9 +1,10 @@
 const BaseModel = require('../../');
-const firebase = require('../functions/firebase.js');
+const {initDatabase} = require('../functions/firebase.js');
 
 module.exports = class ChainedWhereModel extends BaseModel {
 
     constructor(data){
+
         const table = "chained_where";
 
         const schema = {
@@ -12,7 +13,7 @@ module.exports = class ChainedWhereModel extends BaseModel {
 
         const timestamps = false;
         
-        super(firebase, table, data, schema, timestamps);
+        super(initDatabase(), table, data, schema, timestamps);
     }
 
 }

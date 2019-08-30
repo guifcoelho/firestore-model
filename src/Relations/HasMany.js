@@ -1,34 +1,33 @@
-module.exports = class HasMany {
+const BaseModel = require('../BaseModel.js');
+const HasOne = require('./HasOne.js');
 
+module.exports = class HasMany extends HasOne {
+
+    /**
+     * Instanciates a HasMany relation
+     * @param child_class 
+     * @param {BaseModel} parent 
+     * @param {string} field_in_child_models 
+     * @param {string} field_in_parent 
+     */
     constructor(child_class, parent, field_in_child_models, field_in_parent = 'ref'){
-        
-        this.child_class = child_class;
-        this.parent = parent;
-        this.field_in_child_models = field_in_child_models;
-        this.field_in_parent = field_in_parent;
+        super(child_class, parent, field_in_child_models, field_in_parent);
     }
 
-    getValueToQuery(){
-        return this.field_in_parent == 'ref' ? this.parent.getRef() : this.parent.getData()[this.field_in_parent];
+    /**
+     * Returns an array of models
+     */
+    get(){
+        return this.query.get();
     }
 
-    query(){
-        return this.child_class.where(this.field_in_child_models, '==', this.getValueToQuery());
-    }
-
-    async first(){
-        const query = await this.query();
-        return query.first();
-    }
-
-    async get(){
-        const query = await this.query();
-        return query.get();
-    }
-
-    async orderBy(attribute, order = 'asc'){
-        const query = await this.query();
-        return await query.orderBy(attribute, order);
+    /**
+     * Orders the query
+     * @param {*} attribute 
+     * @param {string} order 
+     */
+    orderBy(attribute, order = 'asc'){
+        return this.query.orderBy(attribute, order);
     }
 
 };

@@ -8,7 +8,7 @@ Inspired by Laravel Eloquent.
 
 # Install
 
-`npm install @guifcoelho/firestore-model`
+npm install @guifcoelho/firestore-model
 
 # Usage
 
@@ -85,6 +85,8 @@ module.exports = class DummyModel extends BaseModel {
             }
         }
 
+        const timestamps = false;
+
         super(firebase, table, data, schema, timestamps);
     }
 }
@@ -102,7 +104,7 @@ const squema:{
 ```
 This definition will tell FirestoreModel to transform `firebase.firestore.Timestamp` into `Date` and vice versa. 
 
-With FirestoreModel you do not have to write timestamp fields to your data. Simply use `const timestamps = true` (the default is `false`). Setting timestamps to `true` will make FirestoreModel retrieve the document's timestamps and return the `created_at` and `updated_at` properties.
+With FirestoreModel you do not have to write timestamp fields to your data. Simply use `const timestamps = true`. Setting timestamps to `true` will make FirestoreModel retrieve the document's timestamps and return the `created_at` and `updated_at` properties.
 
 ### Relations
 

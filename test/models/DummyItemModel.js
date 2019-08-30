@@ -1,9 +1,10 @@
 const BaseModel = require('../../');
-const firebase = require('../functions/firebase.js');
+const {initDatabase} = require('../functions/firebase.js');
 
 module.exports = class DummyItemModel extends BaseModel {
 
     constructor(data){
+
         const table = "dummy_itens";
 
         const schema = {
@@ -12,7 +13,7 @@ module.exports = class DummyItemModel extends BaseModel {
 
         const timestamps = true;
         
-        super(firebase, table, data, schema, timestamps);
+        super(initDatabase(), table, data, schema, timestamps);
     }
 
 }

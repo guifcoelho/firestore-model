@@ -1,8 +1,23 @@
+const {initDatabase, clearDatabase, deleteDatabase} = require('./functions/firebase.js');
+before(async () => {
+    await initDatabase();
+});
+
+beforeEach(async () => {
+    await clearDatabase();
+});
+
+after(async () => {
+    await deleteDatabase();
+});
+
+
 var assert = require('assert');
+const firebase = require('firebase/app');
 const DummyItemModel = require('./models/DummyItemModel.js');
 const DummyModel = require('./models/DummyModel.js');
 const UniqueFieldModel = require('./models/UniqueFieldModel.js');
-const firebase = require('./functions/firebase.js');
+
 
 describe('Create/update model', () => {
 
@@ -86,11 +101,11 @@ describe('Create/update with unique fields', () => {
         const query_all = UniqueFieldModel.whereAll();
         const query_delete = await query_all.delete();
         assert.equal(query_delete, true);
-
+        
         const models = await Promise.all(
             [
-                {email: 'email@email.com'},
-                {email: 'email_2@email.com'}
+                {email: `email_${Date.now()}_1@email.com`},
+                {email: `email_${Date.now()}_2@email.com`}
             ]
             .map(item=>{
                 return UniqueFieldModel.createNew(item);
@@ -98,14 +113,13 @@ describe('Create/update with unique fields', () => {
         );
 
         try{
-            let model1 = models[0];
-            await model1.update({email: 'email_2@email.com'});
-            assert.equal(true, false);
+            const result = await models[0].update({email: models[1].data.email});
+            assert.equal(result, false);
         }catch(e){
             assert.equal(e instanceof Error, true);
             assert.equal(
                 e.message,
-                "BaseModel::checkUniqueFields(...) | Breaking unique constraints with 'email:email_2@email.com' in table 'unique_field'"
+                `BaseModel::checkUniqueFields(...) | Breaking unique constraints with 'email:${models[1].data.email}' in table 'unique_field'`
             );
         }
     });
