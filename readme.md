@@ -17,7 +17,7 @@ npm install @guifcoelho/firestore-model
 Create a script to initilize Firebase and export it.
 
 ``` js
-//firebase.js
+//database.js
 
 const firebase = require('firebase/app');
 if (!firebase.apps.length) {
@@ -27,7 +27,7 @@ if (!firebase.apps.length) {
         projectId: // the project id
     });
 }
-module.exports = firebase;
+module.exports = firebase.firestore();
 ```
 
 ## Defining a model class
@@ -35,7 +35,7 @@ module.exports = firebase;
 Create your models like this:
 
 ``` js
-const firebase = require('./firebase.js');
+const database = require('./database.js');
 const BaseModel = require('@guifcoelho/firestore-model');
 
 module.exports = class DummyModel extends BaseModel {
@@ -47,12 +47,12 @@ module.exports = class DummyModel extends BaseModel {
 
         const timestamps = true;
         
-        super(firebase, table, data, schema, timestamps);
+        super(database, table, data, schema, timestamps);
     }
 }
 ```
 
-Remember to instanciate the `firebase` object and inject it to the class `super(...)` constructor.
+Remember to instanciate the `database` object and inject it to the class `super(...)` constructor.
 
 You must define the table name, which is the same as your collection path name. For example, for a collection named `users` just use `const table = "users"`. If you want to refer to a collection inside another collection, just do `const table = "collection1/other-colletion/my-collection"`.
 
@@ -61,7 +61,8 @@ If you want, you can define a simple schema for your data. FirestoreModel will l
 If one of your document's attributes is a reference to another you can do:
 
 ``` js
-const firebase = require('./firebase.js');
+const database = require('./database.js');
+const {DocumentReference} = require('firebase/app').firestore;
 const BaseModel = require('@guifcoelho/firestore-model');
 const RoleModel = require('./RoleModel.js');
 
@@ -72,7 +73,7 @@ module.exports = class DummyModel extends BaseModel {
         
         const schema = {
             role: {
-                type: firebase.firestore.DocumentReference, 
+                type: DocumentReference, 
                 modelClass: RoleModel
             },
 
@@ -87,7 +88,7 @@ module.exports = class DummyModel extends BaseModel {
 
         const timestamps = false;
 
-        super(firebase, table, data, schema, timestamps);
+        super(database, table, data, schema, timestamps);
     }
 }
 ```

@@ -1,4 +1,6 @@
-const firebase = require('firebase/app');
+const firestore = require('firebase/app').firestore;
+const {DocumentReference} = firestore;
+const FirestoreQuery = firestore.Query;
 
 module.exports = class Query {
 
@@ -78,7 +80,7 @@ module.exports = class Query {
     async first(){
         let model = null;
         const self = this;
-        if(this.query instanceof firebase.firestore.DocumentReference){
+        if(this.query instanceof DocumentReference){
             const snap = await this.query.get();
             if(snap.exists){
                 model = new self.model_class(snap);
@@ -135,7 +137,7 @@ module.exports = class Query {
      * @returns {number}
      */
     async count(){
-        if(this.query instanceof firebase.firestore.Query){
+        if(this.query instanceof FirestoreQuery){
             const querySnap = await this.query.get();
             return querySnap.size;
         }
@@ -167,7 +169,7 @@ module.exports = class Query {
      */
     async delete(){
         try{
-            if(this.query instanceof firebase.firestore.DocumentReference){
+            if(this.query instanceof DocumentReference){
                 await this.query.delete();
             }else{
                 const querySnap = await this.query.get();

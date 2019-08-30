@@ -1,4 +1,4 @@
-const firebase = require('firebase/app');
+const {Firestore, DocumentReference, DocumentSnapshot, Timestamp} = require('firebase/app').firestore;
 const Query = require('./Query.js');
 const HasMany = require('./Relations/HasMany.js');
 
@@ -6,7 +6,7 @@ module.exports = class BaseModel{
 
     /**
      * Instanciates a new BaseModel
-     * @param {firebase.firestore.Firestore} database
+     * @param {Firestore} database
      * @param {string} table 
      * @param {object} data 
      * @param {object} schema
@@ -14,7 +14,6 @@ module.exports = class BaseModel{
      */
     constructor(
         database, table, data = null, schema = null, timestamps = false){
-        // this.firebase = firebaseApp;
         this.table = table;
         this.collection = database.collection(table);
         this.schema = schema;
@@ -39,7 +38,7 @@ module.exports = class BaseModel{
     /**
      * Returns the document reference from Firestore
      * 
-     * @returns `firebase.firestore.DocumentReference`
+     * @returns {DocumentReference} `DocumentReference`
      */
     get DocumentReference(){
         return this.collection.doc(this.data.id);
@@ -50,7 +49,7 @@ module.exports = class BaseModel{
      * @param {object} data 
      */
     fill(data){
-        if( data instanceof firebase.firestore.DocumentSnapshot || data instanceof firebase.firestore.QueryDocumentSnapshot ){
+        if( data instanceof DocumentSnapshot){
             this.data = this.prepareModelData(data);
         }else{
             if(this.compareSchemaWithData(data)){
@@ -79,7 +78,7 @@ module.exports = class BaseModel{
 
     /**
      * Converts the DocumentSnapshot to readable data
-     * @param {firebase.firestore.DocumentSnapshot} documentSnapshot 
+     * @param {DocumentSnapshot} documentSnapshot 
      */
     prepareModelData(documentSnapshot){
         let incoming = documentSnapshot.data();
@@ -93,7 +92,7 @@ module.exports = class BaseModel{
                 if(!this.checkSchemaType(this.schema[key], incoming[key])){
                     throw new Error(`BaseModel::prepareModelData(): Value '${key}:${incoming[key]}' in '${this.table}' is not '${this.schema[key].type}'`);
                 }else{
-                    if(incoming[key] instanceof firebase.firestore.DocumentReference && this.schema[key].hasOwnProperty('modelClass')){  
+                    if(incoming[key] instanceof DocumentReference && this.schema[key].hasOwnProperty('modelClass')){  
                         data[key] = new Query(this.schema[key].modelClass, incoming[key]);
                     }
                     else if(incoming[key] instanceof Date){
@@ -125,8 +124,8 @@ module.exports = class BaseModel{
                 }else{
                     const createTime = documentSnapshot._document.proto.createTime;
                     const updateTime = documentSnapshot._document.proto.updateTime;
-                    data.created_at = (new firebase.firestore.Timestamp(createTime.seconds, createTime.nanos)).toDate();
-                    data.updated_at = (new firebase.firestore.Timestamp(updateTime.seconds, updateTime.nanos)).toDate();
+                    data.created_at = (new Timestamp(createTime.seconds, createTime.nanos)).toDate();
+                    data.updated_at = (new Timestamp(updateTime.seconds, updateTime.nanos)).toDate();
                 }  
             }catch(e){
                 data.created_at = null;
@@ -218,8 +217,8 @@ module.exports = class BaseModel{
             if(typeof incomingData[key] == 'object' && incomingData[key] != null && incomingData[key] != undefined){
                 
                 if(incomingData[key] instanceof Date){
-                    incomingData[key] = firebase.firestore.Timestamp.fromDate(incomingData[key]);
-                }else if(incomingData[key] instanceof Query && incomingData[key].query instanceof firebase.firestore.DocumentReference){
+                    incomingData[key] = Timestamp.fromDate(incomingData[key]);
+                }else if(incomingData[key] instanceof Query && incomingData[key].query instanceof DocumentReference){
                     incomingData[key] = incomingData[key].query;
                 }else if(incomingData[key] instanceof BaseModel){
                     incomingData[key] = await incomingData[key].DocumentReference;
