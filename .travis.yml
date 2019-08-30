@@ -1,13 +1,13 @@
 language: node_js
 node_js:
   - 8
+env:
+  - FIRESTORE_EMULATOR_HOST=localhost:8080
 
 install:
-  - npm install -g firebase-tools
   - npm install
-
-before_script:
-  - firebase setup:emulators:firestore
+  - npm install -g firebase-tools
+  - firebase setup:emulators:firestore  
 
 script:
   - npm run firestore-test
