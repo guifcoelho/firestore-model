@@ -10,7 +10,7 @@ module.exports = class HasOne {
      * @param {string} field_in_child_model
      * @param {string} field_in_parent 
      */
-    constructor(child_class, parent, field_in_child_model, field_in_parent = 'ref'){
+    constructor(child_class, parent, field_in_child_model, field_in_parent = 'DocumentReference'){
         this.child_class = child_class;
         this.parent = parent;
         this.field_in_child_model = field_in_child_model;
@@ -21,7 +21,7 @@ module.exports = class HasOne {
      * Gets the value to be queried for in parent's table
      */
     get valueInParent(){
-        return this.field_in_parent == 'ref' ? this.parent.DocumentReference : this.parent.data[this.field_in_parent];
+        return this.field_in_parent == 'DocumentReference' ? this.parent.DocumentReference : this.parent.data[this.field_in_parent];
     }
     
 

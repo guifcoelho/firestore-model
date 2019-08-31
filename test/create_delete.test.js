@@ -29,7 +29,6 @@ describe('Create/update model', () => {
             item: dummy_item,
             description: `Dummy description: ${(new Date()).toString()}`
         });
-
         assert.equal(dummy instanceof DummyModel, true);
         assert.equal(dummy.data.item.query instanceof firebase.firestore.DocumentReference, true);
         

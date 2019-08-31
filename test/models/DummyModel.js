@@ -1,22 +1,21 @@
-const firebase = require('firebase/app');
-const BaseModel = require('../../');
+const Model = require('./Model.js');
 const DummyItemModel = require('./DummyItemModel.js');
-const {initDatabase} = require('../functions/firebase.js');
 
-module.exports = class DummyModel extends BaseModel {
+module.exports = class DummyModel extends Model {
 
     constructor(data){
         
         const table = "dummy";
 
-        const schema = {
-            item: { type: firebase.firestore.DocumentReference, modelClass: DummyItemModel },
-            description: { type: 'string' }
-        }
-
-        const timestamps = true;
+        const options = {
+            schema: {
+                item: { type: DummyItemModel },
+                description: { type: 'string' }
+            },
+            timestamps: true
+        };
         
-        super(initDatabase(), table, data, schema, timestamps);
+        super(table, data, options);
     }
 
 }

@@ -1,19 +1,19 @@
-const BaseModel = require('../../');
-const {initDatabase} = require('../functions/firebase.js');
+const Model = require('./Model.js');
 
-module.exports = class DummyItemModel extends BaseModel {
+module.exports = class DummyItemModel extends Model {
 
     constructor(data){
 
         const table = "dummy_itens";
 
-        const schema = {
-            title: {type: 'string'}
-        }
-
-        const timestamps = true;
+        const options = {
+            schema: {
+                title: {type: 'string'}
+            },
+            timestamps: true
+        };
         
-        super(initDatabase(), table, data, schema, timestamps);
+        super(table, data, options);
     }
 
 }

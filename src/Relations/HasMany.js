@@ -10,7 +10,7 @@ module.exports = class HasMany extends HasOne {
      * @param {string} field_in_child_models 
      * @param {string} field_in_parent 
      */
-    constructor(child_class, parent, field_in_child_models, field_in_parent = 'ref'){
+    constructor(child_class, parent, field_in_child_models, field_in_parent = 'DocumentReference'){
         super(child_class, parent, field_in_child_models, field_in_parent);
     }
 

@@ -1,19 +1,19 @@
-const BaseModel = require('../../');
-const {initDatabase} = require('../functions/firebase.js');
+const Model = require('./Model.js');
 
-module.exports = class UniqueFieldModel extends BaseModel {
+module.exports = class UniqueFieldModel extends Model {
 
     constructor(data){
 
         const table = "unique_field";
 
-        const schema = {
-            email: {type: 'string', unique:true}
-        }
-
-        const timestamps = false;
+        const options = {
+            schema: {
+                email: {type: 'string', unique: true}
+            },
+            timestamps: false
+        };
         
-        super(initDatabase(), table, data, schema, timestamps);
+        super(table, data, options);
     }
 
 }

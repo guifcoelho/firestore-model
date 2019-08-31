@@ -1,6 +1,5 @@
 const {Firestore, DocumentReference, DocumentSnapshot, Timestamp} = require('firebase/app').firestore;
 const Query = require('./Query.js');
-const HasMany = require('./Relations/HasMany.js');
 
 module.exports = class BaseModel{
 
@@ -9,15 +8,14 @@ module.exports = class BaseModel{
      * @param {Firestore} database
      * @param {string} table 
      * @param {object} data 
-     * @param {object} schema
-     * @param {boolean} timestamps
+     * @param {object} options
      */
     constructor(
-        database, table, data = null, schema = null, timestamps = false){
+        database, table, data = null, options = null){
         this.table = table;
         this.collection = database.collection(table);
-        this.schema = schema;
-        this.timestamps = timestamps;
+        this.schema = options && options.hasOwnProperty('schema') ? options.schema : null;
+        this.timestamps = options && options.hasOwnProperty('timestamps') ? options.timestamps : false;
         if(data != null){
             this.fill(data);
         }
@@ -41,7 +39,7 @@ module.exports = class BaseModel{
      * @returns {DocumentReference} `DocumentReference`
      */
     get DocumentReference(){
-        return this.collection.doc(this.data.id);
+        return this.data.hasOwnProperty('id') ? this.collection.doc(this.data.id) : null;
     }
 
     /**
@@ -49,7 +47,7 @@ module.exports = class BaseModel{
      * @param {object} data 
      */
     fill(data){
-        if( data instanceof DocumentSnapshot){
+        if(data instanceof DocumentSnapshot){
             this.data = this.prepareModelData(data);
         }else{
             if(this.compareSchemaWithData(data)){
@@ -70,7 +68,11 @@ module.exports = class BaseModel{
         }
         if(schema.hasOwnProperty('type')){
             if(typeof value == 'object'){
+                if(value instanceof Query){
+                    return value.model instanceof schema.type && value.query instanceof DocumentReference;
+                }
                 return value instanceof schema.type;
+
             }
             return typeof value == schema.type;
         }
@@ -82,30 +84,28 @@ module.exports = class BaseModel{
      */
     prepareModelData(documentSnapshot){
         let incoming = documentSnapshot.data();
-
         let data = {};
-        for(let key in incoming){
-
-            //If schema is null, it will accept anything
-            //If schema is not null, it will check if key is in schema and its type
-            if(this.schema == null || this.schema.hasOwnProperty(key)){
-                if(!this.checkSchemaType(this.schema[key], incoming[key])){
-                    throw new Error(`BaseModel::prepareModelData(): Value '${key}:${incoming[key]}' in '${this.table}' is not '${this.schema[key].type}'`);
-                }else{
-                    if(incoming[key] instanceof DocumentReference && this.schema[key].hasOwnProperty('modelClass')){  
-                        data[key] = new Query(this.schema[key].modelClass, incoming[key]);
+        if(this.schema == null){
+            data = incoming;
+        }else{
+            for(let key in incoming){
+                if(this.schema.hasOwnProperty(key)){
+                    data[key] = incoming[key];
+                    if(this.schema[key].hasOwnProperty('type')){
+                        if(data[key] instanceof DocumentReference){  
+                            data[key] = new Query(this.schema[key].type, data[key]);
+                        }
+                        else if(data[key] instanceof Timestamp){
+                            data[key] = data[key].toDate();
+                        }
+                        if(!this.checkSchemaType(this.schema[key], data[key])){
+                            throw new Error(`BaseModel::prepareModelData(): Value '${key}:${data[key]}' in '${this.table}' is not '${this.schema[key].type}'`);
+                        }
                     }
-                    else if(incoming[key] instanceof Date){
-                        data[key] = incoming[key].toDate();
-                    }else{
-                        data[key] = incoming[key];
-                    }
-                }
-            }         
-        }
+                }         
+            }
 
-        //Go through the schema to see any key is missing from data. If yes, then add the key as null
-        if(this.schema != null){
+            //Go through the schema to see any key is missing from data. If yes, then add the key as null
             for(let key in this.schema){
                 if(!data.hasOwnProperty(key)){
                     if(!this.schema[key].hasOwnProperty('nullable') || !this.schema[key].nullable){
@@ -114,7 +114,7 @@ module.exports = class BaseModel{
                     data[key] = null;
                 }
             }
-        }        
+        }       
 
         if(this.timestamps){
             try{
@@ -160,7 +160,6 @@ module.exports = class BaseModel{
                 }
             }else{
                 for(let key in this.config.schema){
-                    
                     if(
                         !this.schema[key].nullable && 
                         (!incomingData.hasOwnProperty(key) || incomingData[key] == null || incomingData[key] == undefined)
@@ -259,8 +258,8 @@ module.exports = class BaseModel{
         const query = await (new Query(this.constructor)).find(this.data.id);
         const model = await query.first();
         if(model){
-            let data = await this.prepareDataForDatabase(newData);
-            data = this.compareSchemaWithData(data, true);
+            let data = this.compareSchemaWithData(newData, true);
+            data = await this.prepareDataForDatabase(data);
             const check_unique = await model.checkUniqueFields(data);
             if(check_unique){
                 const update = await query.update(data);
@@ -291,8 +290,8 @@ module.exports = class BaseModel{
      */
     static async createNew(newData){
         const model = new this();
-        let data = await model.prepareDataForDatabase(newData);
-        data = model.compareSchemaWithData(newData);
+        let data = model.compareSchemaWithData(newData);
+        data = await model.prepareDataForDatabase(data);
         const check_unique = await model.checkUniqueFields(data);
         return check_unique ? await (new Query(this)).insert(data) : false;
     }
@@ -320,12 +319,24 @@ module.exports = class BaseModel{
     }
 
     /**
+     * Returns the HasOne relation
+     * @param {*} child_class 
+     * @param {string} field_in_child_model
+     * @param {string} field_in_this 
+     */
+    hasOne(child_class, field_in_child_model, field_in_this){
+        const HasOne = require('./Relations/HasOne.js');
+        return new HasOne(child_class, this, field_in_child_model, field_in_this);
+    }
+
+    /**
      * Returns the HasMany relation
      * @param {*} child_class 
      * @param {string} field_in_child_models 
      * @param {string} field_in_this 
      */
     hasMany(child_class, field_in_child_models, field_in_this){
+        const HasMany = require('./Relations/HasMany.js');
         return new HasMany(child_class, this, field_in_child_models, field_in_this);
     }
 

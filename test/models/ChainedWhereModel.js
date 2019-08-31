@@ -1,19 +1,18 @@
-const BaseModel = require('../../');
-const {initDatabase} = require('../functions/firebase.js');
+const Model = require('./Model.js');
 
-module.exports = class ChainedWhereModel extends BaseModel {
+module.exports = class ChainedWhereModel extends Model {
 
     constructor(data){
 
         const table = "chained_where";
-
-        const schema = {
-            number_field: {type: 'number'}
-        }
-
-        const timestamps = false;
+        const options = {
+            schema: {
+                number_field: {type: 'number'}
+            },
+            timestamps: false
+        };
         
-        super(initDatabase(), table, data, schema, timestamps);
+        super(table, data, options);
     }
 
 }

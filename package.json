@@ -1,7 +1,7 @@
 {
   "name": "@guifcoelho/firestore-model",
   "repository": "guifcoelho/firestore-model",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "main": "src/index.js",
   "files": [
     "src"
@@ -22,9 +22,8 @@
     "firebase": "^6.4.0"
   },
   "scripts": {
-    "test": "mocha",
+    "test": "firebase emulators:exec --only firestore \"mocha\"",
     "test-with-coverage": "nyc mocha",
-    "db:clear": "node ./test/functions/db_clear.js",
-    "firestore-test": "firebase emulators:exec --only firestore \"npm test\""
+    "db:clear": "node ./test/functions/db_clear.js"
   }
 }
