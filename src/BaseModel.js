@@ -72,7 +72,6 @@ module.exports = class BaseModel{
                     return value.model instanceof schema.type && value.query instanceof DocumentReference;
                 }
                 return value instanceof schema.type;
-
             }
             return typeof value == schema.type;
         }
@@ -195,7 +194,10 @@ module.exports = class BaseModel{
      * @param {*} value
      */
     static where(field, sign, value){
-        return (new Query(this)).where(field, sign, value);
+        let data = {};
+        data[field] = value;
+        const preparedData = (new this()).prepareDataForDatabase(data);
+        return (new Query(this)).where(field, sign, preparedData[field]);
     }
 
     /**
@@ -211,7 +213,7 @@ module.exports = class BaseModel{
      * @param {object} incomingData
      * @returns {object} The prepared data
      */
-    async prepareDataForDatabase(incomingData){
+    prepareDataForDatabase(incomingData){
         for(let key in incomingData){
             if(typeof incomingData[key] == 'object' && incomingData[key] != null && incomingData[key] != undefined){
                 
@@ -220,7 +222,7 @@ module.exports = class BaseModel{
                 }else if(incomingData[key] instanceof Query && incomingData[key].query instanceof DocumentReference){
                     incomingData[key] = incomingData[key].query;
                 }else if(incomingData[key] instanceof BaseModel){
-                    incomingData[key] = await incomingData[key].DocumentReference;
+                    incomingData[key] = incomingData[key].DocumentReference;
                 }
                 //Include other types...
             }
@@ -259,7 +261,7 @@ module.exports = class BaseModel{
         const model = await query.first();
         if(model){
             let data = this.compareSchemaWithData(newData, true);
-            data = await this.prepareDataForDatabase(data);
+            data = this.prepareDataForDatabase(data);
             const check_unique = await model.checkUniqueFields(data);
             if(check_unique){
                 const update = await query.update(data);
@@ -291,7 +293,7 @@ module.exports = class BaseModel{
     static async createNew(newData){
         const model = new this();
         let data = model.compareSchemaWithData(newData);
-        data = await model.prepareDataForDatabase(data);
+        data = model.prepareDataForDatabase(data);
         const check_unique = await model.checkUniqueFields(data);
         return check_unique ? await (new Query(this)).insert(data) : false;
     }
@@ -313,18 +315,16 @@ module.exports = class BaseModel{
      * @returns {number} integer
      */
     static async count(){
-        const model = new this();
-        const collRef = model.collection;
-        return await (new Query(this, collRef)).count();
+        return await (new Query(this, (new this).collection)).count();
     }
 
     /**
      * Returns the HasOne relation
      * @param {*} child_class 
      * @param {string} field_in_child_model
-     * @param {string} field_in_this 
+     * @param {string|null} field_in_this 
      */
-    hasOne(child_class, field_in_child_model, field_in_this){
+    hasOne(child_class, field_in_child_model, field_in_this = null){
         const HasOne = require('./Relations/HasOne.js');
         return new HasOne(child_class, this, field_in_child_model, field_in_this);
     }

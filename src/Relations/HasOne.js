@@ -1,16 +1,13 @@
-const BaseModel = require('../BaseModel.js');
-const Query = require('../Query.js');
-
-module.exports = class HasOne {
+module.exports = class HasOne{
 
     /**
-     * Instanciates a HasMany relation
+     * Instanciates a HasOne relation
      * @param child_class 
      * @param {BaseModel} parent 
      * @param {string} field_in_child_model
      * @param {string} field_in_parent 
      */
-    constructor(child_class, parent, field_in_child_model, field_in_parent = 'DocumentReference'){
+    constructor(child_class, parent, field_in_child_model, field_in_parent = null){
         this.child_class = child_class;
         this.parent = parent;
         this.field_in_child_model = field_in_child_model;
@@ -21,7 +18,7 @@ module.exports = class HasOne {
      * Gets the value to be queried for in parent's table
      */
     get valueInParent(){
-        return this.field_in_parent == 'DocumentReference' ? this.parent.DocumentReference : this.parent.data[this.field_in_parent];
+        return this.field_in_parent ? this.parent.data[this.field_in_parent] : this.parent;
     }
     
 
@@ -45,8 +42,10 @@ module.exports = class HasOne {
      * @param {object} data 
      */
     save(data){
-        data[this.field_in_child_model] = this.valueInParent;
-        return new this.child_class.createNew(data);
+        if(!data.hasOwnProperty(this.field_in_child_model)){
+            data[this.field_in_child_model] = this.valueInParent;
+        }
+        return this.child_class.createNew(data);
     }
 
 };

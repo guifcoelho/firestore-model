@@ -9,3 +9,4 @@ module.exports = class Model extends BaseModel {
     }
 
 }
+

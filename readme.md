@@ -11,6 +11,9 @@ Highly inspired by [Laravel Eloquent](https://laravel.com/docs/master/eloquent).
 - [Install](#install)
 - [Configuration](#configuration)
 - [Defining a model class](#defining-a-model-class)
+- [Relations](#relations)
+  - [The `hasOne` relation](#the-hasone-relation)
+  - [The `hasMany` relation](#the-hasmany-relation)
 
 # Install
 
@@ -98,7 +101,7 @@ See below the BaseModel constructor's properties:
     - nullable: boolean
   - timestamps: boolean
 
-<!-- # Relations
+# Relations
 
 You can set up relations with other tables using the `hasOne(...)`, `hasMany(...)`, `belongsTo(...)`, `belongsToMany(...)` functions.
 
@@ -108,13 +111,12 @@ Add to your model class:
 
 ``` js
 //Posts model class
-const UniqueItemModel = require('./UniqueItemModel.js');
-
 item(){
+    const UniqueItemModel = require('./UniqueItemModel.js');
     return this.hasOne(
         UniqueItemModel /*The child class constructor*/,
         "owner" /*The child's attribute pointing to the parent model*/,
-        "DocumentReference" /*The parent model's attribute name to look for. The default is its DocumentReference, which is the recommended definition. Therefore, just leave it blank. */
+        null /*The parent model's attribute name to look for. The default is its DocumentReference, which is the recommended definition. Therefore, just leave it blank. */
     );
 }
 ```
@@ -125,13 +127,13 @@ Add to your model class:
 
 ``` js
 //Posts model class
-const CommentModel = require('./CommentModel.js');
 
 comments(){
+    const CommentModel = require('./CommentModel.js');
     return this.hasMany(
         CommentModel /*The children class constructor*/,
         "post" /*The children's attribute pointing to the parent model*/,
-        "DocumentReference" /*The parent model's attribute name to look for. The default is its DocumentReference, which is the recommended definition. Therefore, just leave it blank. */
+        null /*The parent model's attribute name to look for. The default is its DocumentReference, which is the recommended definition. Therefore, just leave it blank. */
     );
 }
-``` -->
+```

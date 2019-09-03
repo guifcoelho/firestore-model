@@ -49,29 +49,10 @@ module.exports = class Query {
     }
 
     /**
-     * Returns the number of documents inside the collection
-     * 
-     * @returns {Promise<number>}
-     */
-    async count(){
-        const querySnap = await this.query.get();
-        return querySnap.size;
-    }
-
-    /**
      * Returns all data from the database table
      */
     async all(){
-        let arrayOfModels = [];
-        const self = this;
-        await model.collection
-            .get()
-            .then(query=>{
-                query.forEach(async el=>{
-                    arrayOfModels.push(new self.model_class(el));
-                });
-            });
-        return arrayOfModels;
+        return await this.whereAll().get();
     }
 
     /**
@@ -117,8 +98,8 @@ module.exports = class Query {
      * @param {string} attribute 
      * @param {string} order 
      */
-    async orderBy(attribute, order = 'asc'){
-        this.query = await this.query.orderBy(attribute, order);
+    orderBy(attribute, order = 'asc'){
+        this.query = this.query.orderBy(attribute, order);
         return this;
     }
 
@@ -126,8 +107,8 @@ module.exports = class Query {
      * Limits the query for the given quantity
      * @param {number} quantity 
      */
-    async limit(quantity){
-        this.query = await this.query.limit(quantity);
+    limit(quantity){
+        this.query = this.query.limit(quantity);
         return this;
     }
 
@@ -174,9 +155,7 @@ module.exports = class Query {
             }else{
                 const querySnap = await this.query.get();
                 await Promise.all(
-                    querySnap.docs.map(item=>{
-                        item.ref.delete();
-                    })
+                    querySnap.docs.map(item=>item.ref.delete())
                 );
             }
             return true;

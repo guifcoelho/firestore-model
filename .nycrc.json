@@ -1,4 +1,5 @@
 {
-    "report-dir": "./test/coverage",
-    "temp-dir": "./test/.nyc_output"
+    "reporter": ["html"],
+    "report-dir": "./tests/coverage",
+    "temp-dir": "./tests/.nyc_output"
 }

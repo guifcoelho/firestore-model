@@ -13,11 +13,11 @@ after(async () => {
 
 
 var assert = require('assert');
-const firebase = require('firebase/app');
+const {DocumentReference} = require('firebase/app').firestore;
 const DummyItemModel = require('./models/DummyItemModel.js');
 const DummyModel = require('./models/DummyModel.js');
 const UniqueFieldModel = require('./models/UniqueFieldModel.js');
-
+const DateAttributeModel = require('./models/DateAttributeModel.js');
 
 describe('Create/update model', () => {
 
@@ -30,7 +30,7 @@ describe('Create/update model', () => {
             description: `Dummy description: ${(new Date()).toString()}`
         });
         assert.equal(dummy instanceof DummyModel, true);
-        assert.equal(dummy.data.item.query instanceof firebase.firestore.DocumentReference, true);
+        assert.equal(dummy.data.item.query instanceof DocumentReference, true);
         
         const item = await dummy.data.item.first();
         assert.equal(item instanceof DummyItemModel, true);
@@ -77,34 +77,31 @@ describe('Delete model', () => {
 describe('Create/update with unique fields', () => {
 
     it('should not create with unique fields', async () => {
-        const query_all = UniqueFieldModel.whereAll();
-        const query_delete = await query_all.delete();
-        assert.equal(query_delete, true);
+        await UniqueFieldModel.whereAll().delete();
 
-        await UniqueFieldModel.createNew({email: 'email@email.com'});
+        const email = `email_${Date.now()}_${Math.random()}@email.com`;
+        await UniqueFieldModel.createNew({email});
         
         try{
-            await UniqueFieldModel.createNew({email: 'email@email.com'});
+            await UniqueFieldModel.createNew({email});
             assert.equal(true, false);
         }catch(e){
             assert.equal(e instanceof Error, true);
             assert.equal(
                 e.message,
-                "BaseModel::checkUniqueFields(...) | Breaking unique constraints with 'email:email@email.com' in table 'unique_field'"
+                `BaseModel::checkUniqueFields(...) | Breaking unique constraints with 'email:${email}' in table 'unique_field'`
             );
         }
         
     });
 
     it('should not update with unique fields', async () => {
-        const query_all = UniqueFieldModel.whereAll();
-        const query_delete = await query_all.delete();
-        assert.equal(query_delete, true);
+        await UniqueFieldModel.whereAll().delete();
         
         const models = await Promise.all(
             [
-                {email: `email_${Date.now()}_1@email.com`},
-                {email: `email_${Date.now()}_2@email.com`}
+                {email: `email_${Date.now()}_${Math.random()}_1@email.com`},
+                {email: `email_${Date.now()}_${Math.random()}_2@email.com`}
             ]
             .map(item=>{
                 return UniqueFieldModel.createNew(item);
@@ -121,6 +118,21 @@ describe('Create/update with unique fields', () => {
                 `BaseModel::checkUniqueFields(...) | Breaking unique constraints with 'email:${models[1].data.email}' in table 'unique_field'`
             );
         }
+    });
+
+});
+
+describe('Create with specific types', () => {
+    
+    it('should create with Date attribute', async () => {
+
+        const model = await DateAttributeModel.createNew({
+            my_date: new Date()
+        });
+        const query = DateAttributeModel.where('my_date', '==', model.data.my_date);
+        const db_model = await query.first();
+        assert.notEqual(db_model, null);
+
     });
 
 });

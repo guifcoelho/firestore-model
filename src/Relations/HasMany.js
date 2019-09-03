@@ -1,7 +1,6 @@
-const BaseModel = require('../BaseModel.js');
 const HasOne = require('./HasOne.js');
 
-module.exports = class HasMany extends HasOne {
+module.exports = class HasManyRelation extends HasOne {
 
     /**
      * Instanciates a HasMany relation
@@ -10,7 +9,7 @@ module.exports = class HasMany extends HasOne {
      * @param {string} field_in_child_models 
      * @param {string} field_in_parent 
      */
-    constructor(child_class, parent, field_in_child_models, field_in_parent = 'DocumentReference'){
+    constructor(child_class, parent, field_in_child_models, field_in_parent = null){
         super(child_class, parent, field_in_child_models, field_in_parent);
     }
 
