@@ -10,7 +10,7 @@ install:
   - firebase setup:emulators:firestore  
 
 script:
-  - npm serve-test
+  - npm run serve-test
 
 deploy:
   provider: npm
