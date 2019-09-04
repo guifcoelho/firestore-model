@@ -1,4 +1,6 @@
-const {Firestore, DocumentReference, DocumentSnapshot, Timestamp} = require('firebase/app').firestore;
+const firebase = require('firebase/app');
+require('firebase/firestore');
+const {Firestore, DocumentReference, DocumentSnapshot, Timestamp} = firebase.firestore;
 const Query = require('./Query.js');
 
 module.exports = class BaseModel{

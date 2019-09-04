@@ -1,6 +1,7 @@
-const firestore = require('firebase/app').firestore;
-const {DocumentReference} = firestore;
-const FirestoreQuery = firestore.Query;
+const firebase = require('firebase/app');
+require('firebase/firestore');
+const {DocumentReference} = firebase.firestore;
+const FirestoreQuery = firebase.firestore.Query;
 
 module.exports = class Query {
 
