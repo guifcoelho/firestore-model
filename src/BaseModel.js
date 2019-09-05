@@ -254,30 +254,27 @@ module.exports = class BaseModel{
     }
 
     /**
+     * Refreshes the model with data from the database
+     */
+    refresh(){
+        return this.constructor.find(this.data.id).first();
+    }
+
+    /**
      * Updates the database with new data
      * 
      * @param {object} newData
      */
     async update(newData){
-        const query = await (new Query(this.constructor)).find(this.data.id);
-        const model = await query.first();
-        if(model){
-            let data = this.compareSchemaWithData(newData, true);
-            data = this.prepareDataForDatabase(data);
-            const check_unique = await model.checkUniqueFields(data);
-            if(check_unique){
-                const update = await query.update(data);
-                if(update){
-                    for(let prop in this.data){
-                        if(data.hasOwnProperty(prop)){
-                            this.data[prop] = data[prop];
-                        }
-                    }
-                }
-                return true;
+        let data = this.compareSchemaWithData(newData, true);
+        data = this.prepareDataForDatabase(data);
+        const check_unique = await this.checkUniqueFields(data);
+        if(check_unique){
+            const update = await (new Query(this.constructor, this.DocumentReference)).update(data);
+            if(update){
+                return this.refresh();
             }
         }
-        return false;
     }
 
     /**

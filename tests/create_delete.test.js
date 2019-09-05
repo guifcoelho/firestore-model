@@ -39,19 +39,18 @@ describe('Create/update model', () => {
 
     it('should update existing model', async ()=>{
 
-        const title = `Dummy item title: ${(new Date()).toString()}`;
+        const title = `Dummy item title: ${Date.now()}`;
         const dummy_item = await DummyItemModel.createNew({
             title
         });
-        const update = await dummy_item.update({
+        const updated_dummy_item = await dummy_item.update({
             title: 'Novo dummy item title'
         });
-        assert.equal(update, true);
-        assert.notEqual(dummy_item.data.title, title);
+        assert.notEqual(updated_dummy_item, null);
+        assert.notEqual(updated_dummy_item.data.title, title);
 
-        const query = DummyItemModel.find(dummy_item.data.id);
-        const updated_dummy_item = await query.first();
-        assert.equal(updated_dummy_item.data.title, dummy_item.data.title);
+        const db_dummy_item = await DummyItemModel.find(dummy_item.data.id).first();
+        assert.equal(db_dummy_item.data.title, updated_dummy_item.data.title);
 
     });
 
