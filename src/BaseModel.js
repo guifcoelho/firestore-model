@@ -95,7 +95,7 @@ module.exports = class BaseModel{
                             data[key] = new Query(this.schema[key].type, data[key]);
                         }
                         else if(data[key] instanceof Timestamp){
-                            data[key] = data[key].toDate();
+                            data[key] = new Date(data[key].seconds*1000);
                         }
                         if(!this.checkSchemaType(this.schema[key], data[key])){
                             throw new Error(`BaseModel::prepareModelData(): Value '${key}:${data[key]}' in '${this.table}' is not '${this.schema[key].type}'`);
@@ -118,13 +118,13 @@ module.exports = class BaseModel{
         if(this.timestamps){
             try{
                 if(documentSnapshot.createTime && typeof documentSnapshot.createTime.toDate == 'function'){
-                    data.created_at = documentSnapshot.createTime.toDate();
-                    data.updated_at = documentSnapshot.updateTime.toDate();
+                    data.created_at = new Date(documentSnapshot.createTime.seconds * 1000);
+                    data.updated_at = new Date(documentSnapshot.updateTime.seconds * 1000);
                 }else{
                     const createTime = documentSnapshot._document.proto.createTime;
                     const updateTime = documentSnapshot._document.proto.updateTime;
-                    data.created_at = (new Timestamp(createTime.seconds, createTime.nanos)).toDate();
-                    data.updated_at = (new Timestamp(updateTime.seconds, updateTime.nanos)).toDate();
+                    data.created_at = new Date(createTime.seconds * 1000);
+                    data.updated_at = new Date(updateTime.seconds * 1000);
                 }  
             }catch(e){
                 data.created_at = null;
