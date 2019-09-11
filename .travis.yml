@@ -7,6 +7,9 @@ install:
   - npm install
   - npm install -g firebase-tools
 
+before_script:
+  - npm run db:clear
+
 script:
   - npm test
 
