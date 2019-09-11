@@ -95,7 +95,7 @@ module.exports = class BaseModel{
                             data[key] = new Query(this.schema[key].type, data[key]);
                         }
                         else if(data[key] instanceof Timestamp){
-                            data[key] = new Date(data[key].seconds*1000);
+                            data[key] = data[key].toDate();
                         }
                         if(!this.checkSchemaType(this.schema[key], data[key])){
                             throw new Error(`BaseModel::prepareModelData(): Value '${key}:${data[key]}' in '${this.table}' is not '${this.schema[key].type}'`);
@@ -117,15 +117,10 @@ module.exports = class BaseModel{
 
         if(this.timestamps){
             try{
-                if(documentSnapshot.createTime && typeof documentSnapshot.createTime.toDate == 'function'){
-                    data.created_at = new Date(documentSnapshot.createTime.seconds * 1000);
-                    data.updated_at = new Date(documentSnapshot.updateTime.seconds * 1000);
-                }else{
-                    const createTime = documentSnapshot._document.proto.createTime;
-                    const updateTime = documentSnapshot._document.proto.updateTime;
-                    data.created_at = new Date(createTime.seconds * 1000);
-                    data.updated_at = new Date(updateTime.seconds * 1000);
-                }  
+                const createTime = documentSnapshot._document.proto.createTime;
+                const updateTime = documentSnapshot._document.proto.updateTime;
+                data.created_at = new Date(createTime.seconds * 1000);
+                data.updated_at = new Date(updateTime.seconds * 1000); 
             }catch(e){
                 data.created_at = null;
                 data.updated_at = null;
@@ -216,7 +211,6 @@ module.exports = class BaseModel{
     prepareDataForDatabase(incomingData){
         for(let key in incomingData){
             if(typeof incomingData[key] == 'object' && incomingData[key] != null && incomingData[key] != undefined){
-                
                 if(incomingData[key] instanceof Date){
                     incomingData[key] = Timestamp.fromDate(incomingData[key]);
                 }else if(incomingData[key] instanceof Query && incomingData[key].query instanceof DocumentReference){
