@@ -1,24 +1,10 @@
-const {initDatabase, clearDatabase, deleteDatabase} = require('./functions/firebase.js');
-before(async () => {
-    await initDatabase();
-});
-
-beforeEach(async () => {
-    await clearDatabase();
-});
-
-after(async () => {
-    await deleteDatabase();
-});
-
-var assert = require('assert');
+const assert = require('assert');
 const HasOne = require('../src/Relations/HasOne.js');
 const HasMany = require('../src/Relations/HasMany.js');
 const HasOneModel = require('./models/RelationsModels/HasOneModel.js');
 const HasManyModel = require('./models/RelationsModels/HasManyModel.js');
 const HasOneChildModel = require('./models/RelationsModels/HasOneChildModel.js');
 const HasManyChildModel = require('./models/RelationsModels/HasManyChildModel.js');
-
 
 describe('Adding relation to database', () => {
 

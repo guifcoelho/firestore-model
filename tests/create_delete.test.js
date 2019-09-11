@@ -1,19 +1,6 @@
-const {initDatabase, clearDatabase, deleteDatabase} = require('./functions/firebase.js');
-before(async () => {
-    await initDatabase();
-});
-
-beforeEach(async () => {
-    await clearDatabase();
-});
-
-after(async () => {
-    await deleteDatabase();
-});
-
-
-var assert = require('assert');
-const {DocumentReference} = require('firebase/app').firestore;
+const assert = require('assert');
+const {firebase} = require('./functions/firebase.js');
+const {DocumentReference} = firebase.firestore;
 const DummyItemModel = require('./models/DummyItemModel.js');
 const DummyModel = require('./models/DummyModel.js');
 const UniqueFieldModel = require('./models/UniqueFieldModel.js');
@@ -25,6 +12,11 @@ describe('Create/update model', () => {
         const dummy_item = await DummyItemModel.createNew({
             title: `Dummy item title: ${(new Date()).toString()}`
         });
+        
+        assert.equal(dummy_item.data.created_at.getDate(), (new Date).getDate());
+        assert.equal(dummy_item.data.created_at.getFullYear(), (new Date).getFullYear());
+        assert.equal(dummy_item.data.created_at.getMonth(), (new Date).getMonth());
+
         const dummy = await DummyModel.createNew({
             item: dummy_item,
             description: `Dummy description: ${(new Date()).toString()}`
@@ -124,14 +116,12 @@ describe('Create/update with unique fields', () => {
 describe('Create with specific types', () => {
     
     it('should create with Date attribute', async () => {
-
         const model = await DateAttributeModel.createNew({
             my_date: new Date()
         });
         const query = DateAttributeModel.where('my_date', '==', model.data.my_date);
         const db_model = await query.first();
         assert.notEqual(db_model, null);
-
     });
 
 });

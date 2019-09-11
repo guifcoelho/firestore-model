@@ -26,6 +26,6 @@
     "coverage": "nyc mocha ./tests/**/*.test.js",
     "serve-test": "firebase emulators:exec --only firestore \"npm run test\"",
     "serve-coverage": "firebase emulators:exec --only firestore \"npm run coverage\"",
-    "db:clear": "node ./test/functions/db_clear.js"
+    "db:clear": "node ./tests/functions/db_clear.js"
   }
 }

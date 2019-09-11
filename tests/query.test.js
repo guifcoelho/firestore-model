@@ -1,17 +1,4 @@
-const {initDatabase, clearDatabase, deleteDatabase} = require('./functions/firebase.js');
-before(async () => {
-    await initDatabase();
-});
-
-beforeEach(async () => {
-    await clearDatabase();
-});
-
-after(async () => {
-    await deleteDatabase();
-});
-
-var assert = require('assert');
+const assert = require('assert');
 const DummyItemModel = require('./models/DummyItemModel.js');
 const ChainedWhereModel = require('./models/ChainedWhereModel.js');
 

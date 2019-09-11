@@ -1,21 +1,19 @@
 const firebase = require('firebase/app');
 require('firebase/firestore');
-const {Firestore, DocumentReference, DocumentSnapshot, Timestamp} = firebase.firestore;
+const {DocumentReference, DocumentSnapshot, Timestamp} = firebase.firestore;
 const Query = require('./Query.js');
 
 module.exports = class BaseModel{
 
     /**
      * Instanciates a new BaseModel
-     * @param {Firestore} database
      * @param {string} table 
      * @param {object} data 
      * @param {object} options
      */
-    constructor(
-        database, table, data = null, options = null){
+    constructor(table, data = null, options = null){
         this.table = table;
-        this.collection = database.collection(table);
+        this.collection = firebase.firestore().collection(table);
         this.schema = options && options.hasOwnProperty('schema') ? options.schema : null;
         this.timestamps = options && options.hasOwnProperty('timestamps') ? options.timestamps : false;
         if(data != null){
