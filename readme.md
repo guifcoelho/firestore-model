@@ -21,12 +21,13 @@ npm install @guifcoelho/firestore-model
 
 # Configuration
 
-Create a script to initilize Firebase and export it.
+Create a script to initilize Firebase when your app is booted.
 
 ``` js
 //database.js
 
 const firebase = require('firebase/app');
+require('firebase/firestore');
 if (!firebase.apps.length) {
     firebase.initializeApp({
         apiKey: // The api key,
@@ -34,7 +35,8 @@ if (!firebase.apps.length) {
         projectId: // the project id
     });
 }
-module.exports = firebase.firestore();
+module.exports.firebase = firebase;
+module.exports.database = firebase.firestore();
 ```
 
 # Defining a model class
@@ -42,13 +44,12 @@ module.exports = firebase.firestore();
 Create your models like this:
 
 ``` js
-const database = require('./database.js');
-const BaseModel = require('@guifcoelho/firestore-model');
+const Model = require('@guifcoelho/firestore-model');
 
-module.exports = class DummyModel extends BaseModel {
+module.exports = class DummyModel extends Model {
     constructor(data){
         const table = "dummy";
-        super(database, table, data, options);
+        super(table, data, options);
     }
 }
 ```
@@ -60,22 +61,25 @@ You must define the table name, which is the same as your collection path name. 
 If you want, you can define some schema for your data. FirestoreModel will look into your defined schema to determine if all attributes in the database have the right types and whether or not they are nullable. For example:
 
 ``` js
-const database = require('./database.js');
-const BaseModel = require('@guifcoelho/firestore-model');
-const RoleModel = require('./RoleModel.js');
+const Model = require('@guifcoelho/firestore-model');
 
-module.exports = class DummyModel extends BaseModel {
+module.exports = class DummyModel extends Model {
     constructor(data){
-        const table = "users"
+        
+        const table = "users";
+        
+        const RoleModel = require('./RoleModel.js');
+        
         const options = {
-            schema = {
+            schema: {
                 role: { type: RoleModel },
                 name: { type: 'string' },
                 last_name: { nullable: true }
             },
             timestamps: false
-        }
-        super(database, table, data, options);
+        };
+        
+        super(table, data, options);
     }
 }
 ```
@@ -97,13 +101,13 @@ See below the BaseModel constructor's properties:
 - table: `string`
 - options: `object`
   - schema
-    - type: Tested for `string`, `number`, `Date`, `BaseModel` derivates or empty. Also, JS's basic types and Firestore object's types
-    - nullable: boolean
-  - timestamps: boolean
+    - type: Tested for `string`, `number`, `Date`, instances of `BaseModel` or empty. Also, JS's basic types and Firestore object's types
+    - nullable: `boolean`
+  - timestamps: `boolean`
 
 # Relations
 
-You can set up relations with other tables using the `hasOne(...)`, `hasMany(...)`, `belongsTo(...)`, `belongsToMany(...)` functions.
+You can set up relations with other tables using the `hasOne(...)` and `hasMany(...)` functions. Relations `belongsTo(...)`, `belongsToMany(...)` are not implemented yet.
 
 ## The `hasOne` relation
 
@@ -116,7 +120,7 @@ item(){
     return this.hasOne(
         UniqueItemModel /*The child class constructor*/,
         "owner" /*The child's attribute pointing to the parent model*/,
-        null /*The parent model's attribute name to look for. The default is its DocumentReference, which is the recommended definition. Therefore, just leave it blank. */
+        "attribute_name" /*The parent model's attribute name to look for. The default is its DocumentReference, which is the recommended definition. Therefore, just leave it blank. */
     );
 }
 ```
@@ -133,7 +137,7 @@ comments(){
     return this.hasMany(
         CommentModel /*The children class constructor*/,
         "post" /*The children's attribute pointing to the parent model*/,
-        null /*The parent model's attribute name to look for. The default is its DocumentReference, which is the recommended definition. Therefore, just leave it blank. */
+        "attribute_name" /*The parent model's attribute name to look for. The default is its DocumentReference, which is the recommended definition. Therefore, just leave it blank. */
     );
 }
 ```
