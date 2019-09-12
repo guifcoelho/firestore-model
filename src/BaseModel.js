@@ -95,7 +95,7 @@ module.exports = class BaseModel{
                             data[key] = new Query(this.schema[key].type, data[key]);
                         }
                         else if(data[key] instanceof Timestamp){
-                            data[key] = data[key].toDate();
+                            data[key] = new Date(data[key].toDate());
                         }
                         if(!this.checkSchemaType(this.schema[key], data[key])){
                             throw new Error(`BaseModel::prepareModelData(): Value '${key}:${data[key]}' in '${this.table}' is not '${this.schema[key].type}'`);
