@@ -24,7 +24,7 @@ npm install @guifcoelho/firestore-model
 Create a script to initilize Firebase when your app is booted.
 
 ``` js
-//database.js
+//initFirebase.js
 
 const firebase = require('firebase/app');
 require('firebase/firestore');
@@ -35,8 +35,6 @@ if (!firebase.apps.length) {
         projectId: // the project id
     });
 }
-module.exports.firebase = firebase;
-module.exports.database = firebase.firestore();
 ```
 
 # Defining a model class
@@ -74,7 +72,8 @@ module.exports = class DummyModel extends Model {
             schema: {
                 role: { type: RoleModel },
                 name: { type: 'string' },
-                last_name: { nullable: true }
+                last_name: { nullable: true },
+                my_date: { type: Date }
             },
             timestamps: false
         };

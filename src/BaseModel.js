@@ -1,4 +1,4 @@
-const firebase = require('firebase/app');
+const firebase = process.hasOwnProperty('firebase') ? process.firebase : require('firebase/app');
 require('firebase/firestore');
 const {DocumentReference, DocumentSnapshot, Timestamp} = firebase.firestore;
 const Query = require('./Query.js');

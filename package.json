@@ -1,7 +1,7 @@
 {
   "name": "@guifcoelho/firestore-model",
   "repository": "guifcoelho/firestore-model",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "main": "src/index.js",
   "files": [
     "src"
@@ -13,7 +13,6 @@
     "node": ">=8"
   },
   "devDependencies": {
-    "@firebase/testing": "0.12.3",
     "dotenv": "^8.1.0",
     "mocha": "^6.2.0",
     "nyc": "14.1.1"
