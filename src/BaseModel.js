@@ -116,14 +116,16 @@ module.exports = class BaseModel{
         }       
 
         if(this.timestamps){
-            try{
-                const createTime = documentSnapshot._document.proto.createTime;
-                const updateTime = documentSnapshot._document.proto.updateTime;
+            const createTime = documentSnapshot._document.proto.createTime;
+            const updateTime = documentSnapshot._document.proto.updateTime;
+            if(typeof createTime == 'string'){
+                //On the web, it will come as string
+                data.created_at = new Date(createTime);
+                data.updated_at = new Date(updateTime); 
+            }else{
+                //On node, it will come as object
                 data.created_at = new Date(createTime.seconds * 1000);
                 data.updated_at = new Date(updateTime.seconds * 1000); 
-            }catch(e){
-                data.created_at = null;
-                data.updated_at = null;
             }
         }
 
