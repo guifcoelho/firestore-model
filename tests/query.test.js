@@ -42,14 +42,18 @@ describe('Query database', () => {
     it("should find with chained 'where' clauses", async () => {
         await ChainedWhereModel.whereAll().delete();
 
+        const otherModel1 = await DummyItemModel.createNew({title: `${Date.now()}-${parseInt(Math.random()*1000)}`});
+        const otherModel2_1 = await DummyItemModel.createNew({title: `${Date.now()}-${parseInt(Math.random()*1000)}`});
+        const otherModel2_2 = await DummyItemModel.createNew({title: `${Date.now()}-${parseInt(Math.random()*1000)}`});
+
         const itens = [
             {number_field: 10},
             {number_field: 5},
             {number_field: 0},
-            {number_field: 20},
-            {number_field: 15},
-            {number_field: 7},
-            {number_field: 13},
+            {number_field: 20, otherModel1, otherModel2: otherModel2_1 },
+            {number_field: 15, otherModel1, otherModel2: otherModel2_2},
+            {number_field: 7, otherModel1, otherModel2: otherModel2_1},
+            {number_field: 13, otherModel1},
         ];
         await Promise.all(
             itens.map(async item => {
@@ -60,12 +64,21 @@ describe('Query database', () => {
         const qtt = await ChainedWhereModel.count();
         assert.equal(qtt, itens.length);
 
-        const query = ChainedWhereModel.where("number_field", "<", 15).where("number_field", ">", 5);
+        const models_query_numbers = await ChainedWhereModel
+            .where("number_field", "<", 15)
+            .where("number_field", ">", 5)
+            .get();
 
-        const models = await query.get();
-        assert.equal(models.length, 3);
+        assert.equal(models_query_numbers.length, 3);
 
+        const models_query_numbers_and_otherModel = await ChainedWhereModel   
+            .where('otherModel1', '==', otherModel1)
+            .where('otherModel2', '==', otherModel2_1)
+            .get();
+
+        assert.equal(models_query_numbers_and_otherModel.length, 2);
         
+
     });
 
     it('should return all items from collection', async () => {

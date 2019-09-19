@@ -215,7 +215,7 @@ module.exports = class BaseModel{
     static where(field, sign, value){
         let data = {};
         data[field] = value;
-        const preparedData = (new this()).prepareDataForDatabase(data);
+        const preparedData = this.prepareDataForDatabase(data);
         return (new Query(this)).where(field, sign, preparedData[field]);
     }
 
@@ -232,7 +232,7 @@ module.exports = class BaseModel{
      * @param {object} incomingData
      * @returns {object} The prepared data
      */
-    prepareDataForDatabase(incomingData){
+    static prepareDataForDatabase(incomingData){
         function convertItem(item){
             if(typeof item == 'object' && item != null && item != undefined){
                 if(item instanceof Date){
@@ -296,7 +296,7 @@ module.exports = class BaseModel{
         if(this.timestamps){
             data.updatedAt = new Date();
         }
-        data = this.prepareDataForDatabase(data);
+        data = this.constructor.prepareDataForDatabase(data);
         const check_unique = await this.checkUniqueFields(data);
         if(check_unique){
             const update = await (new Query(this.constructor, this.DocumentReference)).update(data);
@@ -326,7 +326,7 @@ module.exports = class BaseModel{
             data.createdAt = currentTime;
             data.updatedAt = currentTime;
         }
-        data = model.prepareDataForDatabase(data);
+        data = this.prepareDataForDatabase(data);
         
         const check_unique = await model.checkUniqueFields(data);
         return check_unique ? await (new Query(this)).insert(data) : false;

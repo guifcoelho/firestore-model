@@ -25,7 +25,10 @@ module.exports = class Query {
         if(this.query == null){
             this.query = this.model.collection.where(field, sign, value);
         }else{
-            this.query = this.query.where(field, sign, value);
+            let data = {};
+            data[field] = value;
+            const preparedData = this.model_class.prepareDataForDatabase(data);
+            this.query = this.query.where(field, sign, preparedData[field]);
         }
         return this;
     }
