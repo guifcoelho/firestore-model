@@ -8,7 +8,8 @@ module.exports = class UniqueFieldModel extends Model {
 
         const options = {
             schema: {
-                email: {type: 'string', unique: true}
+                email: {type: 'string', unique: true},
+                other: {type: 'string', nullable: true}
             },
             timestamps: false
         };

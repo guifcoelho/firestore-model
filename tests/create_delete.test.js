@@ -98,8 +98,8 @@ describe('Create/update with unique fields', () => {
         
         const models = await Promise.all(
             [
-                {email: `email_${Date.now()}_${Math.random()}_1@email.com`},
-                {email: `email_${Date.now()}_${Math.random()}_2@email.com`}
+                {email: `email_${Date.now()}_${Math.random()}_1@email.com`, other: `${Date.now()}-${parseInt(Math.random()*1000)}`},
+                {email: `email_${Date.now()}_${Math.random()}_2@email.com`, other: `${Date.now()}-${parseInt(Math.random()*1000)}`}
             ]
             .map(item=>{
                 return UniqueFieldModel.createNew(item);
@@ -116,6 +116,19 @@ describe('Create/update with unique fields', () => {
                 `BaseModel::checkUniqueFields(...) | Breaking unique constraints with 'email:${models[1].data.email}' in table 'unique_field'`
             );
         }
+    });
+
+    it('should other fields without throwing exception', async () => {
+        await UniqueFieldModel.whereAll().delete();
+        
+        const model = await UniqueFieldModel.createNew({
+            email: `email_${Date.now()}_${Math.random()}_1@email.com`,
+            other: `${Date.now()}-${parseInt(Math.random()*1000)}`
+        });
+
+        const modified_model = await model.update({other: 'New string'});
+        assert.equal(model.data.email, modified_model.data.email);
+        assert.notEqual(model.data.other, modified_model.data.other);
     });
 
 });

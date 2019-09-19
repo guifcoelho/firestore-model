@@ -263,7 +263,7 @@ module.exports = class BaseModel{
     async checkUniqueFields(data){
         if(this.schema){
             for(let key in this.schema){
-                if(this.schema[key].hasOwnProperty('unique') && this.schema[key].unique){
+                if(this.schema[key].hasOwnProperty('unique') && this.schema[key].unique && data.hasOwnProperty(key)){
                     if(this.schema[key].type instanceof Array){
                         throw new Error(`BaseModel::checkUniqueFields(...) | Do not check for unicity with array fields`);
                     }else{
