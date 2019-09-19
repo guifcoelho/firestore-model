@@ -1,10 +1,12 @@
 const assert = require('assert');
 const {firebase} = require('./functions/firebase.js');
 const {DocumentReference} = firebase.firestore;
+
 const DummyItemModel = require('./models/DummyItemModel.js');
 const DummyModel = require('./models/DummyModel.js');
 const UniqueFieldModel = require('./models/UniqueFieldModel.js');
 const DateAttributeModel = require('./models/DateAttributeModel.js');
+const ArrayAttributeModel = require('./models/ArrayAttributeModel.js');
 
 describe('Create/update model', () => {
 
@@ -12,10 +14,14 @@ describe('Create/update model', () => {
         const dummy_item = await DummyItemModel.createNew({
             title: `Dummy item title: ${(new Date()).toString()}`
         });
-        
-        assert.equal(dummy_item.data.created_at.getDate(), (new Date).getDate());
-        assert.equal(dummy_item.data.created_at.getFullYear(), (new Date).getFullYear());
-        assert.equal(dummy_item.data.created_at.getMonth(), (new Date).getMonth());
+        assert.equal(dummy_item.data.createdAt.getTime(), dummy_item.data.updatedAt.getTime());
+        assert.equal(dummy_item.data.createdAt < new Date(), true);
+        assert.equal(dummy_item.data.updatedAt < new Date(), true);
+
+
+        assert.equal(dummy_item.data.createdAt.getDate(), (new Date).getDate());
+        assert.equal(dummy_item.data.createdAt.getFullYear(), (new Date).getFullYear());
+        assert.equal(dummy_item.data.createdAt.getMonth(), (new Date).getMonth());
 
         const dummy = await DummyModel.createNew({
             item: dummy_item,
@@ -40,7 +46,8 @@ describe('Create/update model', () => {
         });
         assert.notEqual(updated_dummy_item, null);
         assert.notEqual(updated_dummy_item.data.title, title);
-
+        assert.equal(updated_dummy_item.data.updatedAt > dummy_item.data.createdAt, true);
+        assert.equal(updated_dummy_item.data.updatedAt > dummy_item.data.updatedAt, true);
         const db_dummy_item = await DummyItemModel.find(dummy_item.data.id).first();
         assert.equal(db_dummy_item.data.title, updated_dummy_item.data.title);
 
@@ -122,6 +129,65 @@ describe('Create with specific types', () => {
         const query = DateAttributeModel.where('my_date', '==', model.data.my_date);
         const db_model = await query.first();
         assert.notEqual(db_model, null);
+    });
+
+    it('should create with Array attribute and BaseModel items', async () => {
+
+        const data = new Array(10).fill(null).map(() => `Title: ${Date.now()}-${parseInt(Math.random()*10000)}`);
+        const dummy_item_models = await Promise.all(
+            data.map(item => DummyItemModel.createNew({title: item}))
+        );
+
+        await ArrayAttributeModel.whereAll().delete();
+        const [model1, model2, model3] = await Promise.all([
+            ArrayAttributeModel.createNew({models: dummy_item_models.slice(0,3)}),
+            ArrayAttributeModel.createNew({models: dummy_item_models.slice(3, 6)}),
+            ArrayAttributeModel.createNew({models: dummy_item_models.slice(6, 10)})
+        ]);
+        assert.equal(model1.data.models.length, 3);
+        assert.equal(model2.data.models.length, 3);
+        assert.equal(model3.data.models.length, 4);
+
+        const [it_should_be_model1, it_should_be_model3, it_should_be_model2] = await Promise.all([
+            ArrayAttributeModel.where('models', 'array-contains', dummy_item_models[0]).first(),
+            ArrayAttributeModel.where('models', 'array-contains', dummy_item_models[8]).first(),
+            ArrayAttributeModel.where('models', 'array-contains', dummy_item_models[4]).first(),
+        ]);
+        assert.equal(it_should_be_model1.data.id, model1.data.id);
+        assert.equal(it_should_be_model2.data.id, model2.data.id);
+        assert.equal(it_should_be_model3.data.id, model3.data.id);
+
+        await ArrayAttributeModel.whereAll().delete();
+        const [model4, model5] = await Promise.all([
+            ArrayAttributeModel.createNew({models: [dummy_item_models[1]]}),
+            ArrayAttributeModel.createNew({models: [dummy_item_models[1]]}),
+        ]);
+        const it_should_have_model4_and_5 = await ArrayAttributeModel.where('models', 'array-contains', dummy_item_models[1]).get();
+        assert.equal(it_should_have_model4_and_5.length, 2);    
+        assert.notEqual(it_should_have_model4_and_5.find(item=>item.data.id == model4.data.id), undefined);
+        assert.notEqual(it_should_have_model4_and_5.find(item=>item.data.id == model5.data.id), undefined);
+
+    });
+
+    it('should create with Array attribute and string items', async () => {
+        const data = new Array(10).fill(null).map(() => `${Date.now()}-${parseInt(Math.random()*10000)}`);
+        const model = await ArrayAttributeModel.createNew({strings: data});
+        assert.equal(model.data.strings.length, data.length);
+        model.data.strings.forEach((item, index) => assert.equal(item, data[index]));
+    });
+
+    it('should create with Array attribute and number items', async () => {
+        const data = new Array(10).fill(null).map(() => Math.random()*10000);
+        const model = await ArrayAttributeModel.createNew({numbers: data});
+        assert.equal(model.data.numbers.length, data.length);
+        model.data.numbers.forEach((item, index) => assert.equal(item, data[index]));
+    });
+
+    it('should create with Array attribute and Date items', async () => {
+        const data = new Array(10).fill(null).map(() => new Date);
+        const model = await ArrayAttributeModel.createNew({dates: data});
+        assert.equal(model.data.dates.length, data.length);
+        model.data.dates.forEach((item, index) => assert.equal(item.getTime(), data[index].getTime()));
     });
 
 });

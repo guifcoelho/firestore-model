@@ -71,6 +71,7 @@ module.exports = class DummyModel extends Model {
         const options = {
             schema: {
                 role: { type: RoleModel },
+                strings: { type: Array, arrayOf: 'string' },
                 name: { type: 'string' },
                 last_name: { nullable: true },
                 my_date: { type: Date }
@@ -100,7 +101,7 @@ See below the BaseModel constructor's properties:
 - table: `string`
 - options: `object`
   - schema
-    - type: Tested for `string`, `number`, `Date`, instances of `BaseModel` or empty. Also, JS's basic types and Firestore object's types
+    - type: Tested for `string`, `number`, `Date`, `Array`, instances of `BaseModel` or empty. Also, JS's basic types and Firestore object's types
     - nullable: `boolean`
   - timestamps: `boolean`
 

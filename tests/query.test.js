@@ -1,6 +1,9 @@
 const assert = require('assert');
+require('./functions/firebase.js');
+
 const DummyItemModel = require('./models/DummyItemModel.js');
 const ChainedWhereModel = require('./models/ChainedWhereModel.js');
+const ArrayAttributeModel = require('./models/ArrayAttributeModel.js');
 
 describe('Query database', () => {
 
@@ -156,5 +159,39 @@ describe('Query database', () => {
         const qtt = await DummyItemModel.count();
         assert.equal(qtt, data.length);
     });
+
+    it('should find within Array attributes', async () => {
+        await ArrayAttributeModel.whereAll().delete();
+        await Promise.all([
+            ArrayAttributeModel.createNew({strings: ['a', 'b', 'c', 'd', 'e']}),
+            ArrayAttributeModel.createNew({strings: ['f', 'g', 'h', 'i', 'j']}),
+            ArrayAttributeModel.createNew({strings: ['k', 'l', 'm', 'n', 'o']}),
+        ]);
+
+        const [query_model_a_e, query_model_k_o, query_model_f_j] = await Promise.all([
+            ArrayAttributeModel.where('strings', 'array-contains', 'a').first(),
+            ArrayAttributeModel.where('strings', 'array-contains', 'o').first(),
+            ArrayAttributeModel.where('strings', 'array-contains', 'h').first()
+        ]);
+
+        assert.notEqual(query_model_a_e.data.strings.find(item => item=='a'), undefined);
+        assert.notEqual(query_model_a_e.data.strings.find(item => item=='b'), undefined);
+        assert.notEqual(query_model_a_e.data.strings.find(item => item=='c'), undefined);
+        assert.notEqual(query_model_a_e.data.strings.find(item => item=='d'), undefined);
+        assert.notEqual(query_model_a_e.data.strings.find(item => item=='e'), undefined);
+
+        assert.notEqual(query_model_f_j.data.strings.find(item => item=='f'), undefined);
+        assert.notEqual(query_model_f_j.data.strings.find(item => item=='g'), undefined);
+        assert.notEqual(query_model_f_j.data.strings.find(item => item=='h'), undefined);
+        assert.notEqual(query_model_f_j.data.strings.find(item => item=='i'), undefined);
+        assert.notEqual(query_model_f_j.data.strings.find(item => item=='j'), undefined);
+
+        assert.notEqual(query_model_k_o.data.strings.find(item => item=='k'), undefined);
+        assert.notEqual(query_model_k_o.data.strings.find(item => item=='l'), undefined);
+        assert.notEqual(query_model_k_o.data.strings.find(item => item=='m'), undefined);
+        assert.notEqual(query_model_k_o.data.strings.find(item => item=='n'), undefined);
+        assert.notEqual(query_model_k_o.data.strings.find(item => item=='o'), undefined);
+
+    })
 
 });

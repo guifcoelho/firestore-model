@@ -82,6 +82,21 @@ module.exports = class BaseModel{
      * @param {DocumentSnapshot} documentSnapshot 
      */
     prepareModelData(documentSnapshot){
+        function convertType(item, schema){
+            if(typeof item == 'object'){
+                if(item instanceof DocumentReference && schema.hasOwnProperty('type')){  
+                    return new Query(schema.type, item);
+                }
+                else if(item instanceof Timestamp){
+                    return new Date(item.toDate());
+                }
+                else if(item instanceof Array && schema.hasOwnProperty('arrayOf')){
+                    return item.map(subItem => convertType(subItem, {type: schema.arrayOf}));
+                }
+            }
+            return item;
+        }
+
         let incoming = documentSnapshot.data();
         let data = {};
         if(this.schema == null){
@@ -91,14 +106,15 @@ module.exports = class BaseModel{
                 if(this.schema.hasOwnProperty(key)){
                     data[key] = incoming[key];
                     if(this.schema[key].hasOwnProperty('type')){
-                        if(data[key] instanceof DocumentReference){  
-                            data[key] = new Query(this.schema[key].type, data[key]);
-                        }
-                        else if(data[key] instanceof Timestamp){
-                            data[key] = new Date(data[key].toDate());
-                        }
+                        data[key] = convertType(data[key], this.schema[key]);
                         if(!this.checkSchemaType(this.schema[key], data[key])){
                             throw new Error(`BaseModel::prepareModelData(): Value '${key}:${data[key]}' in '${this.table}' is not '${this.schema[key].type}'`);
+                        }else if(data[key] instanceof Array && this.schema[key].hasOwnProperty('arrayOf')){
+                            data[key].forEach((item, index) => {
+                                if(!this.checkSchemaType({type: this.schema[key].arrayOf}, item)){
+                                    throw new Error(`BaseModel::prepareModelData(): Value '${key}[${index}]:${item}' in '${this.table}' is not '${this.schema[key].arrayOf}'`);
+                                }
+                            })
                         }
                     }
                 }         
@@ -113,24 +129,14 @@ module.exports = class BaseModel{
                     data[key] = null;
                 }
             }
-        }       
+        }
 
         if(this.timestamps){
-            const createTime = documentSnapshot._document.proto.createTime;
-            const updateTime = documentSnapshot._document.proto.updateTime;
-            if(typeof createTime == 'string'){
-                //On the web, it will come as string
-                data.created_at = new Date(createTime);
-                data.updated_at = new Date(updateTime); 
-            }else{
-                //On node, it will come as object
-                data.created_at = new Date(createTime.seconds * 1000);
-                data.updated_at = new Date(updateTime.seconds * 1000); 
-            }
+            data.createdAt = incoming.hasOwnProperty('createdAt') ? new Date(incoming.createdAt.toDate()) : null;
+            data.updatedAt = incoming.hasOwnProperty('updatedAt') ? new Date(incoming.updatedAt.toDate()) : null;
         }
 
         data.id = documentSnapshot.id;
-
         return data;
     }
 
@@ -146,12 +152,20 @@ module.exports = class BaseModel{
         if(this.schema != null){
             if(partial){
                 for(let key in incomingData){
-                    if(!this.schema.hasOwnProperty(key)){
-                        throw new Error(`BaseModel::compareSchemaWithData() | Attribute '${key}' is not allowed in table '${this.table}'`);
-                    }else if(!this.checkSchemaType(this.schema[key], incomingData[key])){
-                        throw new Error(`BaseModel::compareSchemaWithData() | Value '${key}:${incomingData[key]}' in table '${this.table}' is not '${this.schema[key].type}'`);                        
-                    }else{
-                        data[key] = incomingData[key];
+                    if(this.schema.hasOwnProperty(key)){
+                        if(!this.checkSchemaType(this.schema[key], incomingData[key])){
+                            throw new Error(`BaseModel::compareSchemaWithData() | Value '${key}:${incomingData[key]}' in table '${this.table}' is not '${this.schema[key].type}'`);                        
+                        }
+                        else if(this.schema[key] instanceof Array && this.schema[key].hasOwnProperty('arrayOf')){
+                            incomingData[key].forEach((item, index) => {
+                                if(!this.checkSchemaType({type: this.schema[key].arrayOf}, item)){
+                                    throw new Error(`BaseModel::prepareModelData(): Value '${key}[${index}]:${item}' in '${this.table}' is not '${this.schema[key].arrayOf}'`);
+                                }
+                            });
+                        }
+                        else{
+                            data[key] = incomingData[key];
+                        }
                     }
                 }
             }else{
@@ -166,8 +180,16 @@ module.exports = class BaseModel{
                         data[key] = null;
                     }
                     else if(!this.checkSchemaType(this.schema[key], incomingData[key])){
-                        throw new Error(`BaseModel::compareSchemaWithData(): Value '${key}:${incomingData[key]}' in table '${this.table}' is not '${this.schema[key].type}'`);
-                    }else{
+                        throw new Error(`BaseModel::compareSchemaWithData(): Value '${key}:${incomingData[key]}' in table '${this.table}' is not of type '${this.schema[key].type}'`);
+                    }
+                    else if(this.schema[key] instanceof Array && this.schema[key].hasOwnProperty('arrayOf')){
+                        incomingData[key].forEach((item, index) => {
+                            if(!this.checkSchemaType({type: this.schema[key].arrayOf}, item)){
+                                throw new Error(`BaseModel::prepareModelData(): Value '${key}[${index}]:${item}' in '${this.table}' is not '${this.schema[key].arrayOf}'`);
+                            }
+                        });
+                    }
+                    else{
                         data[key] = incomingData[key];
                     }
                 }
@@ -211,17 +233,23 @@ module.exports = class BaseModel{
      * @returns {object} The prepared data
      */
     prepareDataForDatabase(incomingData){
-        for(let key in incomingData){
-            if(typeof incomingData[key] == 'object' && incomingData[key] != null && incomingData[key] != undefined){
-                if(incomingData[key] instanceof Date){
-                    incomingData[key] = Timestamp.fromDate(incomingData[key]);
-                }else if(incomingData[key] instanceof Query && incomingData[key].query instanceof DocumentReference){
-                    incomingData[key] = incomingData[key].query;
-                }else if(incomingData[key] instanceof BaseModel){
-                    incomingData[key] = incomingData[key].DocumentReference;
+        function convertItem(item){
+            if(typeof item == 'object' && item != null && item != undefined){
+                if(item instanceof Date){
+                    return Timestamp.fromDate(item);
+                }else if(item instanceof Query && item.query instanceof DocumentReference){
+                    return item.query;
+                }else if(item instanceof BaseModel){
+                    return item.DocumentReference;
+                }else if(item instanceof Array){
+                    return item.map(subItem => convertItem(subItem));
                 }
                 //Include other types...
             }
+            return item;
+        }
+        for(let key in incomingData){
+            incomingData[key] = convertItem(incomingData[key]);
         }
         return incomingData;
     }
@@ -235,11 +263,15 @@ module.exports = class BaseModel{
     async checkUniqueFields(data){
         if(this.schema){
             for(let key in this.schema){
-                if(this.schema[key].hasOwnProperty('unique') && this.schema[key].unique && data.hasOwnProperty(key)){
-                    const query = this.constructor.where(key, '==', data[key]);
-                    const query_first = await query.first();
-                    if(query_first){
-                        throw new Error(`BaseModel::checkUniqueFields(...) | Breaking unique constraints with '${key}:${data[key]}' in table '${this.table}'`);
+                if(this.schema[key].hasOwnProperty('unique') && this.schema[key].unique){
+                    if(this.schema[key].type instanceof Array){
+                        throw new Error(`BaseModel::checkUniqueFields(...) | Do not check for unicity with array fields`);
+                    }else{
+                        const query = this.constructor.where(key, '==', data[key]);
+                        const query_first = await query.first();
+                        if(query_first){
+                            throw new Error(`BaseModel::checkUniqueFields(...) | Breaking unique constraints with '${key}:${data[key]}' in table '${this.table}'`);
+                        }
                     }
                 }
             }
@@ -261,6 +293,9 @@ module.exports = class BaseModel{
      */
     async update(newData){
         let data = this.compareSchemaWithData(newData, true);
+        if(this.timestamps){
+            data.updatedAt = new Date();
+        }
         data = this.prepareDataForDatabase(data);
         const check_unique = await this.checkUniqueFields(data);
         if(check_unique){
@@ -286,7 +321,13 @@ module.exports = class BaseModel{
     static async createNew(newData){
         const model = new this();
         let data = model.compareSchemaWithData(newData);
+        if(model.timestamps){
+            const currentTime = new Date();
+            data.createdAt = currentTime;
+            data.updatedAt = currentTime;
+        }
         data = model.prepareDataForDatabase(data);
+        
         const check_unique = await model.checkUniqueFields(data);
         return check_unique ? await (new Query(this)).insert(data) : false;
     }

@@ -1,4 +1,6 @@
 const assert = require('assert');
+require('./functions/firebase.js');
+
 const HasOne = require('../src/Relations/HasOne.js');
 const HasMany = require('../src/Relations/HasMany.js');
 const HasOneModel = require('./models/RelationsModels/HasOneModel.js');
