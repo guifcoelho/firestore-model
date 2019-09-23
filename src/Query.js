@@ -178,7 +178,8 @@ module.exports = class Query {
     /**
      * Paginates the a database query
      * @param {int} quantity Number of items to paginate
-     * @param {BaseModel} cursor Model object to paginate from
+     * @param {*} startAfter The 'startAfter' cursor
+     * @param {*} endBefore The 'endBefore' cursor
      */
     async paginate(quantity = 5, startAfter = null, endBefore = null){
         if(startAfter == null && endBefore == null){
