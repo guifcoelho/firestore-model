@@ -180,18 +180,22 @@ module.exports = class Query {
      * @param {int} quantity Number of items to paginate
      * @param {BaseModel} cursor Model object to paginate from
      */
-    async paginate(quantity = 5, cursor = null){
-        const BaseModel = require('./BaseModel.js');
-        if(cursor != null && !(cursor instanceof BaseModel)){
-            throw new Error("Paginate cursor must either be 'null' or an instance of 'FirestoreModel.BaseModel'");
-        }
-        if(cursor == null){
+    async paginate(quantity = 5, startAfter = null, endBefore = null){
+        if(startAfter == null && endBefore == null){
             return this.limit(quantity).get();
         }else{
-            if(cursor instanceof BaseModel){
-                cursor = await cursor.DocumentReference.get();
+            const BaseModel = require('./BaseModel.js');
+            startAfter = typeof startAfter == 'object' && startAfter instanceof BaseModel ? await startAfter.DocumentReference.get() : startAfter;
+            endBefore = typeof endBefore == 'object' && endBefore instanceof BaseModel ? await endBefore.DocumentReference.get() : endBefore;
+            
+            let query = this.limit(quantity).query;
+            if(startAfter != null){
+                query = query.startAfter(startAfter);
             }
-            const querySnap = await this.limit(quantity).query.startAfter(cursor).get();
+            if(endBefore != null){
+                query = query.endBefore(endBefore);
+            }
+            const querySnap = await query.get();
             return querySnap.docs.map(snap => new this.model_class(snap));
         }
     }
