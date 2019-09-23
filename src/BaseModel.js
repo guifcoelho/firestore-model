@@ -1,6 +1,6 @@
 const firebase = process.hasOwnProperty('firebase') ? process.firebase : require('firebase/app');
 require('firebase/firestore');
-const {DocumentReference, DocumentSnapshot, Timestamp} = firebase.firestore;
+const {DocumentReference, DocumentSnapshot, Timestamp, FieldValue} = firebase.firestore;
 const Query = require('./Query.js');
 
 module.exports = class BaseModel{
@@ -19,6 +19,7 @@ module.exports = class BaseModel{
         if(data != null){
             this.fill(data);
         }
+        this.countersTable = 'FirestoreModel_countersTable';
     }
 
     /**
@@ -29,6 +30,7 @@ module.exports = class BaseModel{
             table: this.table,
             schema: this.schema,
             timestamps: this.timestamps,
+            countersTable: this.countersTable
             //Add others...
         }
     }
@@ -285,6 +287,23 @@ module.exports = class BaseModel{
     refresh(){
         return this.constructor.find(this.data.id).first();
     }
+
+
+    /**
+     * Updates the counters table with the given quantity
+     * @param {number} quantity 
+     */
+    static async updateCounter(quantity = 1){
+        try{
+            const model = new this();
+            const counter = firebase.firestore().collection(model.countersTable).doc(model.table);
+            await counter.set({counter: FieldValue.increment(quantity)});
+            return true;
+        }catch(e){
+            throw new Error(e.message);
+        }        
+    }
+
 
     /**
      * Updates the database with new data

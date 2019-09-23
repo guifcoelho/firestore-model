@@ -134,7 +134,7 @@ module.exports = class Query {
                 const docRef = await collection.add(item);
                 const docSnap = await docRef.get();
                 return new model_class(docSnap);
-            })
+            });
         }
         const docRef = await collection.add(data);
         const docSnap = await docRef.get();
@@ -152,7 +152,7 @@ module.exports = class Query {
             }else{
                 const querySnap = await this.query.get();
                 await Promise.all(
-                    querySnap.docs.map(item=>item.ref.delete())
+                    querySnap.docs.map(item => item.ref.delete())
                 );
             }
             return true;
@@ -188,11 +188,11 @@ module.exports = class Query {
         if(cursor == null){
             return this.limit(quantity).get();
         }else{
-            const snapshot = await cursor.DocumentReference.get();
-            const querySnap = await this.limit(quantity+1).query.startAt(snapshot).get();
-            let docs = querySnap.docs;
-            docs.shift();
-            return docs.map(snap => new this.model_class(snap));
+            if(cursor instanceof BaseModel){
+                cursor = await cursor.DocumentReference.get();
+            }
+            const querySnap = await this.limit(quantity).query.startAfter(cursor).get();
+            return querySnap.docs.map(snap => new this.model_class(snap));
         }
     }
 };
