@@ -29,4 +29,29 @@ module.exports = class HasManyRelation extends HasOne {
         return this.query.orderBy(attribute, order);
     }
 
+    /**
+     * Limits the query for the given quantity
+     * @param {number} quantity 
+     */
+    limit(quantity = 1){
+        return this.query.limit(quantity);
+    }
+
+    /**
+     * Returns the number of documents inside the collection
+     * 
+     * @returns {number}
+     */
+    count(){
+        return this.query.count();
+    }
+
+    /**
+     * Paginates the a database query
+     * @param {int} quantity Number of items to paginate
+     * @param {BaseModel} cursor Model object to paginate from
+     */
+    paginate(quantity = 5, cursor = null){
+        return this.query.paginate(quantity = 5, cursor = null);
+    }
 };

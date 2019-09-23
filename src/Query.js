@@ -86,15 +86,8 @@ module.exports = class Query {
      * Returns an array of models after querying
      */
     async get(){
-        let arrayOfModels = [];
-        let self = this;
-        await this.query.get()
-            .then(query=>{
-                query.forEach(async el=>{
-                    arrayOfModels.push(new self.model_class(el));
-                });
-            });
-        return arrayOfModels;
+        const querySnap = await this.query.get();
+        return querySnap.docs.map(docSnap => new this.model_class(docSnap));
     }
 
     /**
@@ -179,6 +172,27 @@ module.exports = class Query {
             return true;
         }catch(e){
             return false;
+        }
+    }
+
+    /**
+     * Paginates the a database query
+     * @param {int} quantity Number of items to paginate
+     * @param {BaseModel} cursor Model object to paginate from
+     */
+    async paginate(quantity = 5, cursor = null){
+        const BaseModel = require('./BaseModel.js');
+        if(cursor != null && !(cursor instanceof BaseModel)){
+            throw new Error("Paginate cursor must either be 'null' or an instance of 'FirestoreModel.BaseModel'");
+        }
+        if(cursor == null){
+            return this.limit(quantity).get();
+        }else{
+            const snapshot = await cursor.DocumentReference.get();
+            const querySnap = await this.limit(quantity+1).query.startAt(snapshot).get();
+            let docs = querySnap.docs;
+            docs.shift();
+            return docs.map(snap => new this.model_class(snap));
         }
     }
 };

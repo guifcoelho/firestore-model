@@ -352,6 +352,17 @@ module.exports = class BaseModel{
         return await (new Query(this, (new this).collection)).count();
     }
 
+
+    /**
+     * Paginates the a database query
+     * @param {int} quantity Number of items to paginate
+     * @param {BaseModel} cursor Model object to paginate from
+     */
+    static paginate(quantity = 5, cursor = null){
+        return (new Query(this)).whereAll().paginate(quantity, cursor);
+    }
+
+
     /**
      * Returns the HasOne relation
      * @param {*} child_class 

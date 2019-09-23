@@ -205,6 +205,36 @@ describe('Query database', () => {
         assert.notEqual(query_model_k_o.data.strings.find(item => item=='n'), undefined);
         assert.notEqual(query_model_k_o.data.strings.find(item => item=='o'), undefined);
 
-    })
+    });
+
+    it('should paginate data', async () => {
+
+        await DummyItemModel.whereAll().delete();
+        const data = new Array(10).fill(null).map(() => `Title: ${Date.now()}-${parseInt(Math.random()*10000)}`);
+        await Promise.all( data.map(item => DummyItemModel.createNew({title: item})) );
+        const [query_models, models_paginate1] = await Promise.all([
+            DummyItemModel.whereAll().get(),
+            DummyItemModel.paginate(5)
+        ]);
+        query_models.slice(0,5).forEach((item, index) => assert.equal(item.data.title, models_paginate1[index].data.title))
+        const models_paginate2 = await DummyItemModel.paginate(5, models_paginate1[models_paginate1.length-1]);
+        query_models.slice(5,10).forEach((item, index) => assert.equal(item.data.title, models_paginate2[index].data.title));
+
+    });
+
+    it('should paginate data after query', async () => {
+
+        await DummyItemModel.whereAll().delete();
+        const data = new Array(10).fill(null).map(() => `Title: ${Date.now()}-${parseInt(Math.random()*10000)}`);
+        await Promise.all( data.map(item => DummyItemModel.createNew({title: item})) );
+        const [query_models, models_paginate1] = await Promise.all([
+            DummyItemModel.whereAll().orderBy('title').get(),
+            DummyItemModel.whereAll().orderBy('title').paginate(5)
+        ]);
+        query_models.slice(0,5).forEach((item, index) => assert.equal(item.data.title, models_paginate1[index].data.title))
+        const models_paginate2 = await DummyItemModel.whereAll().orderBy('title').paginate(5, models_paginate1[models_paginate1.length-1]);
+        query_models.slice(5,10).forEach((item, index) => assert.equal(item.data.title, models_paginate2[index].data.title));
+
+    });
 
 });
