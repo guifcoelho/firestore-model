@@ -73,6 +73,9 @@ module.exports = class BaseModel{
                 if(value instanceof Query){
                     return value.model instanceof schema.type && value.query instanceof DocumentReference;
                 }
+                if(schema.type == Array){
+                    return Array.isArray(value);
+                }
                 return value instanceof schema.type;
             }
             return typeof value == schema.type;

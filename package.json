@@ -1,7 +1,7 @@
 {
   "name": "@guifcoelho/firestore-model",
   "repository": "guifcoelho/firestore-model",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "main": "src/index.js",
   "files": [ "src" ],
   "description": "Database models for Firebase Firestore. Inspired by Laravel Eloquent.",
