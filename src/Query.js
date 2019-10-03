@@ -8,9 +8,12 @@ module.exports = class Query {
     /**
      * Instanciates a new Query object
      * @param {*} model_class Instance of `BaseModel`
+     * @param {*} query
+     * @param {array} tableParams
      */
-    constructor(model_class, query = null){
-        this.model = new model_class();
+    constructor(model_class, query = null, tableParams = []){
+        this.model = new model_class().at(tableParams);
+        this.tableParams = tableParams;
         this.model_class = model_class;
         this.query = query;
     }
@@ -23,7 +26,7 @@ module.exports = class Query {
      */
     where(field, sign, value){
         if(this.query == null){
-            this.query = this.model.collection.where(field, sign, value);
+            this.query = this.model.at(this.tableParams).collection.where(field, sign, value);
         }else{
             let data = {};
             data[field] = value;
@@ -38,7 +41,7 @@ module.exports = class Query {
      * @param {string|number} id 
      */
     find(id){
-        this.query = this.model.collection.doc(id);
+        this.query = this.model.at(this.tableParams).collection.doc(id);
         return this;
     }
 
@@ -48,7 +51,7 @@ module.exports = class Query {
      * @returns `FirestoreModel.Query`
      */
     whereAll(){
-        this.query = this.model.collection;
+        this.query = this.model.at(this.tableParams).collection;
         return this;
     }
 
@@ -68,13 +71,13 @@ module.exports = class Query {
         if(this.query instanceof DocumentReference){
             const snap = await this.query.get();
             if(snap.exists){
-                model = new self.model_class(snap);
+                model = new self.model_class(snap).at(this.model.tableParams);
             }
         }else{  
             await this.query.limit(1).get()
                 .then(snap=>{
                     snap.forEach(async el=>{
-                        model = new self.model_class(el);
+                        model = new self.model_class(el).at(this.model.tableParams);
                     });
                 });
         }
@@ -87,7 +90,7 @@ module.exports = class Query {
      */
     async get(){
         const querySnap = await this.query.get();
-        return querySnap.docs.map(docSnap => new this.model_class(docSnap));
+        return querySnap.docs.map(docSnap => new this.model_class(docSnap).at(this.model.tableParams));
     }
 
     /**
@@ -133,12 +136,23 @@ module.exports = class Query {
             return data.map(async item=>{
                 const docRef = await collection.add(item);
                 const docSnap = await docRef.get();
-                return new model_class(docSnap);
+                return new model_class(docSnap).at(this.model.tableParams);
             });
         }
         const docRef = await collection.add(data);
         const docSnap = await docRef.get();
-        return new model_class(docSnap);
+        return new model_class(docSnap).at(this.model.tableParams);
+    }
+
+    /**
+     * Sets a new document on the database by id
+     * @param {string|number} docId 
+     * @param {object} data 
+     */
+    async setById(docId, data){
+        const collection = this.model.collection;
+        await collection.doc(docId).set(data);
+        return this.find(docId).first();
     }
 
     /**
@@ -197,7 +211,7 @@ module.exports = class Query {
                 query = query.endBefore(endBefore);
             }
             const querySnap = await query.get();
-            return querySnap.docs.map(snap => new this.model_class(snap));
+            return querySnap.docs.map(snap => new this.model_class(snap).at(this.model.tableParams));
         }
     }
 };

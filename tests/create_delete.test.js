@@ -7,6 +7,8 @@ const DummyModel = require('./models/DummyModel.js');
 const UniqueFieldModel = require('./models/UniqueFieldModel.js');
 const DateAttributeModel = require('./models/DateAttributeModel.js');
 const ArrayAttributeModel = require('./models/ArrayAttributeModel.js');
+const DefaultAttrModel = require('./models/DefaultAttrModel.js');
+const DefaultAttrFunctionModel = require('./models/DefaultAttrFunctionModel.js');
 
 describe('Create/update model', () => {
 
@@ -33,6 +35,26 @@ describe('Create/update model', () => {
         const item = await dummy.data.item.first();
         assert.equal(item instanceof DummyItemModel, true);
         assert.equal(item.data.id, dummy_item.data.id);
+    });
+
+    it('should create by id', async () => {
+        await DummyItemModel.whereAll().delete();
+        const id = `id-${parseInt(Math.random()*10000)}`;
+        const setModel = await DummyItemModel.setById(id, {
+            title: `Title: ${Date.now()}-${parseInt(Math.random()*10000)}`
+        });
+
+        const data = new Array(10).fill(null).map(() => `Title: ${Date.now()}-${parseInt(Math.random()*10000)}`);
+        const createModels = await Promise.all(
+            data.map(title => DummyItemModel.createNew({title}))
+        )
+
+        const findModel = await DummyItemModel.find(setModel.data.id).first();
+        assert.equal(findModel.data.title, setModel.data.title);
+
+        const queryModels = await DummyItemModel.whereAll().get();
+        assert.equal(queryModels.length, createModels.length+1);
+
     });
 
     it('should update existing model', async ()=>{
@@ -87,7 +109,7 @@ describe('Create/update with unique fields', () => {
             assert.equal(e instanceof Error, true);
             assert.equal(
                 e.message,
-                `BaseModel::checkUniqueFields(...) | Breaking unique constraints with 'email:${email}' in table 'unique_field'`
+                `BaseModel:: Breaking unique constraints with 'email:${email}' in table 'unique_field'`
             );
         }
         
@@ -113,7 +135,7 @@ describe('Create/update with unique fields', () => {
             assert.equal(e instanceof Error, true);
             assert.equal(
                 e.message,
-                `BaseModel::checkUniqueFields(...) | Breaking unique constraints with 'email:${models[1].data.email}' in table 'unique_field'`
+                `BaseModel:: Breaking unique constraints with 'email:${models[1].data.email}' in table 'unique_field'`
             );
         }
     });
@@ -204,3 +226,17 @@ describe('Create with specific types', () => {
     });
 
 });
+
+describe('Create with default attributes', () => {
+
+    it('should create with default without function', async () => {
+        const model = await DefaultAttrModel.createNew({title: `Title: ${Date.now()}`});
+        assert.equal(model.data.attDefault, 'abc');
+    });
+
+    it('should create with default with function', async () => {
+        const model = await DefaultAttrFunctionModel.createNew({title: `Title: ${Date.now()}`});
+        assert.equal(model.data.attDefault, model.data.title);
+    });
+    
+})

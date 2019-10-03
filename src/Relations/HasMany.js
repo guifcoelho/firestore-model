@@ -5,12 +5,13 @@ module.exports = class HasManyRelation extends HasOne {
     /**
      * Instanciates a HasMany relation
      * @param child_class 
+     * @param {array} child_tableParams
      * @param {BaseModel} parent 
      * @param {string} field_in_child_models 
      * @param {string} field_in_parent 
      */
-    constructor(child_class, parent, field_in_child_models, field_in_parent = null){
-        super(child_class, parent, field_in_child_models, field_in_parent);
+    constructor(child_class, child_tableParams = [], parent, field_in_child_models, field_in_parent = null){
+        super(child_class, child_tableParams, parent, field_in_child_models, field_in_parent);
     }
 
     /**
@@ -52,6 +53,6 @@ module.exports = class HasManyRelation extends HasOne {
      * @param {BaseModel} cursor Model object to paginate from
      */
     paginate(quantity = 5, cursor = null){
-        return this.query.paginate(quantity = 5, cursor = null);
+        return this.query.paginate(quantity, cursor);
     }
 };

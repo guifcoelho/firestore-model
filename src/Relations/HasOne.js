@@ -3,12 +3,14 @@ module.exports = class HasOne{
     /**
      * Instanciates a HasOne relation
      * @param child_class 
+     * @param {array} child_tableParams
      * @param {BaseModel} parent 
      * @param {string} field_in_child_model
      * @param {string} field_in_parent 
      */
-    constructor(child_class, parent, field_in_child_model, field_in_parent = null){
+    constructor(child_class, child_tableParams = [], parent, field_in_child_model, field_in_parent = null){
         this.child_class = child_class;
+        this.child_tableParams = child_tableParams;
         this.parent = parent;
         this.field_in_child_model = field_in_child_model;
         this.field_in_parent = field_in_parent;
@@ -27,7 +29,7 @@ module.exports = class HasOne{
      * @returns {Query}
      */
     get query(){
-        return this.child_class.where(this.field_in_child_model, '==', this.valueInParent);
+        return this.child_class.where(this.field_in_child_model, '==', this.valueInParent, this.child_tableParams);
     }
 
     /**
@@ -45,7 +47,7 @@ module.exports = class HasOne{
         if(!data.hasOwnProperty(this.field_in_child_model)){
             data[this.field_in_child_model] = this.valueInParent;
         }
-        return this.child_class.createNew(data);
+        return this.child_class.createNew(data, this.child_tableParams);
     }
 
 };
