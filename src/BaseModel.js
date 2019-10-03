@@ -142,7 +142,8 @@ module.exports = class BaseModel{
         function convertType(item, schema){
             if(typeof item == 'object'){
                 if(item instanceof DocumentReference && schema.hasOwnProperty('type')){  
-                    return new Query(schema.type, item);
+                    const tableParams = schema.hasOwnProperty('tableParams') ? schema.tableParams : [];
+                    return new Query(schema.type, item, tableParams);
                 }
                 else if(item instanceof Timestamp){
                     return new Date(item.toDate());
@@ -171,7 +172,7 @@ module.exports = class BaseModel{
             //Go through the schema to see any key is missing from data. If yes, then use the default property (if assigned) or add the key as null
             for(let key in this.schema){
                 if(!data.hasOwnProperty(key) || data[key] == null){
-                    if(!this.schema[key].hasOwnProperty('default') && !this.schema[key].hasOwnProperty('nullable') || !this.schema[key].nullable){
+                    if(!this.schema[key].hasOwnProperty('default') && (!this.schema[key].hasOwnProperty('nullable') || !this.schema[key].nullable)){
                         throw new Error(`BaseModel:: Key '${key}' in '${this.table}' is not nullable`);
                     }
                     data[key] = null;
