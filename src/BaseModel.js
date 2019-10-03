@@ -76,6 +76,9 @@ module.exports = class BaseModel{
                 if(schema.type == Array){
                     return Array.isArray(value);
                 }
+                if(schema.type == Object){
+                    return value === Object(value);
+                }
                 return value instanceof schema.type;
             }
             return typeof value == schema.type;
