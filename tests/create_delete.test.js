@@ -53,7 +53,7 @@ describe('Create/update model', () => {
         assert.equal(findModel.data.title, setModel.data.title);
 
         const queryModels = await DummyItemModel.whereAll().get();
-        assert.equal(queryModels.length, createModels.length+1);
+        assert.equal(queryModels.length, createModels.length + 1);
 
     });
 

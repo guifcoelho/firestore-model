@@ -166,7 +166,10 @@ module.exports = class Query {
             }else{
                 const querySnap = await this.query.get();
                 await Promise.all(
-                    querySnap.docs.map(item => item.ref.delete())
+                    querySnap.docs.map(docSnap => {
+                        const item = new this.model_class(docSnap).at(this.model.tableParams);
+                        item.delete();
+                    })
                 );
             }
             return true;

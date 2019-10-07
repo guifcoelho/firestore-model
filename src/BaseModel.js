@@ -19,6 +19,8 @@ module.exports = class BaseModel{
         
         this.schema = options && options.hasOwnProperty('schema') ? options.schema : null;
         this.timestamps = options && options.hasOwnProperty('timestamps') ? options.timestamps : false;
+        this.triggers = options && options.hasOwnProperty('triggers') ? options.triggers : null;
+
         if(data != null){
             this.fill(data);
         }
@@ -356,6 +358,21 @@ module.exports = class BaseModel{
         return this.constructor.find(this.data.id, this.tableParams).first();
     }
 
+    /**
+     * Triggers a registered event of type 'onWrite' (set function), 'onDelete' (delete function), 'onCreate' (create function), and 'onUpdate' (update function).
+     * 
+     * - 'onWrite' and 'onCreate' will receive the new data as parameter
+     * - 'onDelete' will receive the delete document's data as parameter
+     * - 'onUpdate' triggers will receive the old and new data as parameter ({old, new}).
+     * 
+     * @param {string} event 
+     * @param {object} data 
+     */
+    triggerEvent(event, data){
+        if(this.triggers != null && this.triggers.hasOwnProperty(event) && typeof this.triggers[event] == 'function'){
+            this.triggers[event](data);
+        }
+    }
 
     /**
      * Updates the database with new data
@@ -372,7 +389,9 @@ module.exports = class BaseModel{
         if(check_unique){
             const update = await (new Query(this.constructor, this.DocumentReference, this.tableParams)).update(data);
             if(update){
-                return this.refresh();
+                const updatedItem = this.refresh();
+                this.triggerEvent('onUpdate', {old: this.data, new: updatedItem.data});
+                return updatedItem;
             }
         }
     }
@@ -397,7 +416,11 @@ module.exports = class BaseModel{
         data = this.prepareDataForDatabase(data);
         
         const check_unique = await model.checkUniqueFields(data);
-        return check_unique ? await (new Query(this, null, model.tableParams)).insert(data) : false;
+        const newItem = check_unique ? await (new Query(this, null, model.tableParams)).insert(data) : false;
+        if(newItem){
+            newItem.triggerEvent('onCreate', newItem.data);
+        }
+        return newItem;
     }
 
     /**
@@ -416,7 +439,10 @@ module.exports = class BaseModel{
             data.updatedAt = currentTime;
         }
         data = this.prepareDataForDatabase(data);
-        return await (new Query(this, null, model.tableParams)).setById(docId, data);
+        const newItem =  await (new Query(this, null, model.tableParams)).setById(docId, data);
+
+        newItem.triggerEvent('onWrite', newItem.data);
+        return newItem;
     }
 
     /**
@@ -425,6 +451,7 @@ module.exports = class BaseModel{
     async delete(){
         try{
             await (new Query(this.constructor, this.DocumentReference, this.tableParams)).delete();
+            this.triggerEvent('onDelete', this.data);
             return true;
         }catch(e){
             return false;
@@ -476,5 +503,4 @@ module.exports = class BaseModel{
         const HasMany = require('./Relations/HasMany.js');
         return new HasMany(child_class, child_tableParams, this, field_in_child_models, field_in_this);
     }
-
 };
