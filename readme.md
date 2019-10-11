@@ -56,6 +56,18 @@ Remember to instanciate the `database` object and inject it to the class's `supe
 
 You must define the table name, which is the same as your collection path name. For example, for a collection named `users` just use `const table = "users"`. If you want to refer to a collection inside another collection, just do `const table = "collection1/other-colletion/my-collection"`.
 
+If the table path makes reference to an unknown collection, such as `const table = "users/user-id-1234/posts/post-id-123/comments"` where posts are added to each user, then you can use table params:
+
+```js
+const table = 'users/$userId/posts/$postId/comments';
+const tableParam = ['user-id-1234', 'post-id-123'];
+
+Comment.createNew({title: 'This post is awesome!'},  tableParam);
+Comment.whereAll( tableParam );
+Comment.find('comment-id-123456', tableParam);
+Comment.where('title', '==', 'This post is awesome!', tableParams);
+```
+
 If you want, you can define some schema for your data. FirestoreModel will look into your defined schema to determine if all attributes in the database have the right types and whether or not they are nullable. For example:
 
 ``` js
@@ -67,16 +79,23 @@ module.exports = class DummyModel extends Model {
         const table = "users";
         
         const RoleModel = require('./RoleModel.js');
+        const OtherModel = require('./OtherModel.js');
         
         const options = {
             schema: {
                 role: { type: RoleModel },
                 strings: { type: Array, arrayOf: 'string' },
-                name: { type: 'string' },
+                name: { type: 'string', default: 'My name' },
                 last_name: { nullable: true },
                 my_date: { type: Date }
             },
-            timestamps: false
+            timestamps: false,
+            triggers: {
+                onCreate: data => OtherModel.createNew({title: `Created item '${data.id}'`}),
+                onUpdate: data => OtherModel.createNew({title: `Updated item '${data.new.id}'`}),
+                onWrite: data => OtherModel.createNew({title: `Wrote item '${data.id}'`}),
+                onDelete: data => OtherModel.createNew({title: `Deleted item '${data.id}'`})
+            }
         };
         
         super(table, data, options);
@@ -96,14 +115,18 @@ If you want to have a date attribute, just do `options.schema.my_attribute.type 
 
 With FirestoreModel you do not have to write timestamp fields to your data. Simply use `options.timestamps = true`. Setting timestamps to `true` will make FirestoreModel retrieve the document's timestamps and return the `created_at` and `updated_at` properties.
 
+You can write event triggers (`onCreate`, `onUpdate`, `onWrite`, and `onDelete`) for the write, delete, update and create operations. You must write a function with a `data` parameter that will receive the model's data right before the event is run. The `onUpdate` trigger function will receive the `data` parameter as `{old, new}`.
+
 See below the BaseModel constructor's properties:
 
 - table: `string`
 - options: `object`
   - schema
-    - type: Tested for `string`, `number`, `Date`, `Array`, instances of `BaseModel` or empty. Also, JS's basic types and Firestore object's types
+    - type: Tested for `string`, `number`, `Date`, `Array`, `Object`, instances of `BaseModel` or empty. Also, JS's primitive types and Firestore object's types
     - nullable: `boolean`
+    - default: returns the defined value or function
   - timestamps: `boolean`
+  - triggers: `onCreate` (after successful `createNew()` function), `onDelete` (after successful `delete()` function), `onUpdate` (after successful `update()` function) and `onWrite` (after successful `setById()` function)
 
 # Relations
 

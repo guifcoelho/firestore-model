@@ -1,6 +1,7 @@
 const assert = require('assert');
 require('./functions/firebase.js');
 
+const DummyModel = require('./models/DummyModel.js');
 const DummyItemModel = require('./models/DummyItemModel.js');
 const ChainedWhereModel = require('./models/ChainedWhereModel.js');
 const ArrayAttributeModel = require('./models/ArrayAttributeModel.js');
@@ -269,6 +270,19 @@ describe('Query database', () => {
         const docRef = await collection.add({title: `${Date.now()}-${parseInt(Math.random()*10000)}`});
         const model = await DefaultAttrModel.find(docRef.id).first();
         assert.equal(model.data.attDefault, 'abc');
+
+    });
+
+    it('should throw error when query with empty field and not nullable', async () => {
+
+        try{
+            const collection = new DummyModel().collection;
+            const docRef = await collection.add({description: `${Date.now()}-${parseInt(Math.random()*10000)}`});
+            await DummyModel.find(docRef.id).first();
+            assert.equal(true, false);
+        }catch(e){
+            assert.equal(e.message, "BaseModel:: Key 'item' in 'dummy' is not nullable")
+        }            
 
     });
 
