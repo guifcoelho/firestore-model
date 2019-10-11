@@ -1,6 +1,6 @@
 const Model = require('../../');
 
-module.exports = class DefaultAttributeModel extends Model {
+module.exports = class DefaultAttrModel extends Model {
 
     constructor(data){
 

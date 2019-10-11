@@ -4,6 +4,7 @@ require('./functions/firebase.js');
 const DummyItemModel = require('./models/DummyItemModel.js');
 const ChainedWhereModel = require('./models/ChainedWhereModel.js');
 const ArrayAttributeModel = require('./models/ArrayAttributeModel.js');
+const DefaultAttrModel = require('./models/DefaultAttrModel.js');
 
 describe('Query database', () => {
 
@@ -259,6 +260,15 @@ describe('Query database', () => {
                 .paginate(2, startAfter2, endBefore2);
 
         query_models.slice(4,6).forEach((item, index) => assert.equal(item.data.title, models_paginate_backwards[index].data.title));
+
+    });
+
+    it('should query empty fields and return default', async () => {
+
+        const collection = new DefaultAttrModel().collection;
+        const docRef = await collection.add({title: `${Date.now()}-${parseInt(Math.random()*10000)}`});
+        const model = await DefaultAttrModel.find(docRef.id).first();
+        assert.equal(model.data.attDefault, 'abc');
 
     });
 
