@@ -9,7 +9,7 @@ module.exports = class DefaultAttrFunctionModel extends Model {
         const options = {
             schema: {
                 title: {type: 'string'},
-                attDefault: {type: 'string', default: data => data.title}
+                attDefault: {type: 'string', default: () => 'Other title'}
             },
             timestamps: true
         };

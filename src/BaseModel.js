@@ -29,6 +29,7 @@ module.exports = class BaseModel{
     /**
      * Redefines the collection based on a list of parameters
      * @param {array} tableParams
+     * @returns {this}
      */
     at(tableParams = []){
         if(tableParams.length > 0) this.tableParams = tableParams;
@@ -173,19 +174,14 @@ module.exports = class BaseModel{
             }
             //Go through the schema to see any key is missing from data. If yes, then use the default property (if assigned) or add the key as null
             for(let key in this.schema){
-                if(!data.hasOwnProperty(key) || data[key] == null){
+                if(!data.hasOwnProperty(key) || data[key] === null || data[key] === undefined){
                     if(!this.schema[key].hasOwnProperty('default') && (!this.schema[key].hasOwnProperty('nullable') || !this.schema[key].nullable)){
                         throw new Error(`BaseModel:: Key '${key}' in '${this.table}' is not nullable`);
-                    }
-                    data[key] = null;
-                }
-            }
-            for(let key in this.schema){
-                if(this.schema[key].hasOwnProperty('default')){
-                    data[key] = typeof this.schema[key].default == 'function' ? this.schema[key].default(data) : this.schema[key].default;
-                    this.validateSchema(data[key], key, this.schema[key]);
-                    if(data[key] == null && (!this.schema[key].hasOwnProperty('nullable') || !this.schema[key].nullable)){
-                        throw new Error(`BaseModel:: Key '${key}' in '${this.table}' is not nullable`);
+                    }else if(this.schema[key].hasOwnProperty('default')){
+                        data[key] = typeof this.schema[key].default == 'function' ? this.schema[key].default() : this.schema[key].default;
+                        this.validateSchema(data[key], key, this.schema[key]);
+                    }else{
+                        data[key] = null;
                     }
                 }
             }
@@ -215,43 +211,23 @@ module.exports = class BaseModel{
                 //Analysing schema with partial data. Default property is not applied.
                 for(let key in incomingData){
                     if(this.schema.hasOwnProperty(key)){
-                        if(!this.checkSchemaType(this.schema[key], incomingData[key])){
-                            throw new Error(`BaseModel:: Value '${key}:${incomingData[key]}' in table '${this.table}' is not '${this.schema[key].type}'`);                        
-                        }
-                        else if(this.schema[key] instanceof Array && this.schema[key].hasOwnProperty('arrayOf')){
-                            incomingData[key].forEach((item, index) => {
-                                if(!this.checkSchemaType({type: this.schema[key].arrayOf}, item)){
-                                    throw new Error(`BaseModel:: Value '${key}[${index}]:${item}' in '${this.table}' is not '${this.schema[key].arrayOf}'`);
-                                }
-                            });
-                        }
-                        else{
-                            data[key] = incomingData[key];
-                        }
+                        data[key] = incomingData[key];
+                        this.validateSchema(data[key], key, this.schema[key]);
                     }
                 }
             }else{
                 //Analysing schema with complete data. Default property is applied.
                 for(let key in this.schema){
-                    if(
-                        !this.schema[key].hasOwnProperty('default') &&
-                        (!this.schema[key].hasOwnProperty('nullable') || this.schema[key].nullable === false) &&
-                        (!incomingData.hasOwnProperty(key) || incomingData[key] === null || incomingData[key] === undefined)
-                    ){
-                        throw new Error(`BaseModel:: Key '${key}' in table '${this.table}' is not nullable`);    
-                    }else if(!incomingData.hasOwnProperty(key) || incomingData[key] === null || incomingData[key] === undefined){
-                        data[key] = null;
+                    if(!incomingData.hasOwnProperty(key) || incomingData[key] === null || incomingData[key] === undefined){
+                        if(!this.schema[key].hasOwnProperty('default') && (!this.schema[key].hasOwnProperty('nullable') || !this.schema[key].nullable)){
+                            throw new Error(`BaseModel:: Key '${key}' in '${this.table}' is not nullable`);
+                        }else if(this.schema[key].hasOwnProperty('default')){
+                            data[key] = typeof this.schema[key].default == 'function' ? this.schema[key].default() : this.schema[key].default;
+                        }else{
+                            data[key] = null;
+                        }
                     }else{
                         data[key] = incomingData[key];
-                    }
-                }
-                
-                for(let key in this.schema){
-                    if(this.schema[key].hasOwnProperty('default') && (data[key] === null || data[key] === undefined)){
-                        data[key] = typeof this.schema[key].default == 'function' ? this.schema[key].default(data) : this.schema[key].default;
-                    }
-                    if((!this.schema[key].hasOwnProperty('nullable') || this.schema[key].nullable === false) && data[key] === null){
-                        throw new Error(`BaseModel:: Key '${key}' in table '${this.table}' is not nullable`); 
                     }
                     this.validateSchema(data[key], key, this.schema[key]);
                 }
@@ -353,6 +329,7 @@ module.exports = class BaseModel{
 
     /**
      * Refreshes the model with data from the database
+     * @returns {this|null}
      */
     refresh(){
         return this.constructor.find(this.data.id, this.tableParams).first();
@@ -376,8 +353,8 @@ module.exports = class BaseModel{
 
     /**
      * Updates the database with new data
-     * 
      * @param {object} newData
+     * @returns {this|null}
      */
     async update(newData){
         let data = this.compareSchemaWithData(newData, true);
@@ -402,7 +379,7 @@ module.exports = class BaseModel{
      * Creates a new registry in the database
      * @param {object} newData
      * @param {array} tableParams
-     * @returns {*} instance of `FirestoreModel.BaseModel`
+     * @returns {BaseModel} instance of `FirestoreModel.BaseModel`
      */
     static async createNew(newData, tableParams = []){
         const model = (new this).at(tableParams);
@@ -416,8 +393,8 @@ module.exports = class BaseModel{
         data = this.prepareDataForDatabase(data);
         
         const check_unique = await model.checkUniqueFields(data);
-        const newItem = check_unique ? await (new Query(this, null, model.tableParams)).insert(data) : false;
-        if(newItem){
+        const newItem = check_unique ? await (new Query(this, null, model.tableParams)).insert(data) : null;
+        if(newItem != null){
             newItem.triggerEvent('onCreate', newItem.data);
         }
         return newItem;
@@ -447,6 +424,7 @@ module.exports = class BaseModel{
 
     /**
      * Deletes the model
+     * @returns {boolean}
      */
     async delete(){
         try{
@@ -472,7 +450,7 @@ module.exports = class BaseModel{
     /**
      * Paginates the a database query
      * @param {int} quantity Number of items to paginate
-     * @param {BaseModel} cursor Model object to paginate from
+     * @param {this} cursor Model object to paginate from
      * @param {array} tableParams
      */
     static paginate(quantity = 5, cursor = null, tableParams = []){

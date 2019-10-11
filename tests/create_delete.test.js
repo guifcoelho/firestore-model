@@ -236,7 +236,7 @@ describe('Create with default attributes', () => {
 
     it('should create with default with function', async () => {
         const model = await DefaultAttrFunctionModel.createNew({title: `Title: ${Date.now()}`});
-        assert.equal(model.data.attDefault, model.data.title);
+        assert.equal(model.data.attDefault, 'Other title');
     });
     
 })
