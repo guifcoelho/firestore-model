@@ -1,6 +1,13 @@
-const firebase = process.hasOwnProperty('firebase') ? process.firebase : require('firebase/app');
-require('firebase/firestore');
-const {DocumentReference, DocumentSnapshot, Timestamp, FieldValue} = firebase.firestore;
+let firebase;
+if(process.hasOwnProperty('firebase')){
+    firebase = process.firebase;
+}else{
+    firebase = require('firebase/app');
+    require('firebase/firestore');
+}
+const firestoreNamespaces = process.hasOwnProperty('firestoreNamespaces') ? process.firestoreNamespaces : firebase.firestore;
+
+const {DocumentReference, DocumentSnapshot, Timestamp} = firestoreNamespaces;
 const Query = require('./Query.js');
 
 module.exports = class BaseModel{

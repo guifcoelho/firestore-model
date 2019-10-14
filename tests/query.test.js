@@ -1,5 +1,15 @@
 const assert = require('assert');
-require('./functions/firebase.js');
+const {firestoreSdk} = require('./functions/firebase.js');
+
+if(firestoreSdk == 'local'){
+    const localFirebase = require('@firebase/testing');
+    beforeEach(async () => {
+        firestoreNamespaces = require('./functions/firebase.js').firestoreNamespaces;
+    });
+    after(async ()=>{
+        await Promise.all(localFirebase.apps().map(app => app.delete()));
+    })
+}
 
 const DummyModel = require('./models/DummyModel.js');
 const DummyItemModel = require('./models/DummyItemModel.js');
