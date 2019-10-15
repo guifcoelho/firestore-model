@@ -3,14 +3,14 @@ const firestoreSdk = process.env.FIRESTORE_SDK != '' ? process.env.FIRESTORE_SDK
 
 let firebase, firestoreNamespaces;
 switch(firestoreSdk){
-    case 'default': [firebase, firestoreNamespaces, projectId] = initDefault(); break;
-    case 'local': [firebase, firestoreNamespaces, projectId] = initLocal(); break;
-    default: [firebase, firestoreNamespaces, projectId] = initDefault(); break;
+    case 'default': [firebase, firestoreNamespaces] = initDefault(); break;
+    case 'local': [firebase, firestoreNamespaces] = initLocal(); break;
+    default: [firebase, firestoreNamespaces] = initDefault(); break;
 }
 
 process.firebase = firebase;
 process.firestoreNamespaces = firestoreNamespaces;
-module.exports = {firestoreSdk, firebase, firestoreNamespaces, projectId};
+module.exports = {firestoreSdk, firebase, firestoreNamespaces};
 
 
 //-----------------------
@@ -33,7 +33,7 @@ function initDefault(){
         });
     }
     const firestoreNamespaces = firebase.firestore;
-    return [firebase, firestoreNamespaces, projectId];
+    return [firebase, firestoreNamespaces];
 }
 
 /**
@@ -46,7 +46,7 @@ function initLocal(){
     if (!localFirebase.apps().length){
         localFirebase.initializeTestApp({ projectId });
     }
-    const firebase = localFirebase.apps().find(app => app.options_.projectId == projectId);
+    const firebase = localFirebase.apps()[0];//.find(app => app.options_.projectId == projectId);
     const firestoreNamespaces = localFirebase.firestore;
-    return [firebase, firestoreNamespaces, projectId];
+    return [firebase, firestoreNamespaces];
 }

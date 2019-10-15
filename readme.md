@@ -37,6 +37,29 @@ if (!firebase.apps.length) {
 }
 ```
 
+If you want to run Firebase as admin, first add the `GOOGLE_APPLICATION_CREDENTIALS` variable into your .env file poiting to your Firebase service account json file, then:
+
+```js
+
+const firebase = require('firebase-admin');
+firebase.initializeApp({
+    credential: firebase.credential.applicationDefault()
+});
+process.firebase = firebase;
+
+```
+
+Finally, if you really need to run Firebase locally with emulators you will have to do an extra step and add the Firestore namespaces into the `process` variable:
+
+```js
+
+const localFirebase = require('@firebase/testing');
+localFirebase.initializeTestApp({ projectId: 'project-id' });
+const firebase = localFirebase.apps().find(app => app.options_.projectId == 'project-id');
+process.firebase = firebase;
+process.firestoreNamespaces = localFirebase.firestore;
+```
+
 # Defining a model class
 
 Create your models like this:
