@@ -375,7 +375,9 @@ module.exports = class BaseModel{
             if(update){
                 const updatedItem = await this.refresh();
                 if(updatedItem != null){
-                    this.triggerEvent('onUpdate', {old: this.data, new: updatedItem.data});
+                    const oldData = {...this.data};
+                    const newData = {...updatedItem.data};
+                    this.triggerEvent('onUpdate', {old: oldData, new: newData});
                 }
                 return updatedItem;
             }
@@ -404,7 +406,7 @@ module.exports = class BaseModel{
         const check_unique = await model.checkUniqueFields(data);
         const newItem = check_unique ? await (new Query(this, null, model.tableParams)).insert(data) : null;
         if(newItem != null){
-            newItem.triggerEvent('onCreate', newItem.data);
+            newItem.triggerEvent('onCreate', {...newItem.data});
         }
         return newItem;
     }
@@ -427,7 +429,7 @@ module.exports = class BaseModel{
         data = this.prepareDataForDatabase(data);
         const newItem =  await (new Query(this, null, model.tableParams)).setById(docId, data);
         if(newItem != null){
-            newItem.triggerEvent('onWrite', newItem.data);
+            newItem.triggerEvent('onWrite', {...newItem.data});
         }
         return newItem;
     }
@@ -439,7 +441,7 @@ module.exports = class BaseModel{
     async delete(){
         const deleted = await (new Query(this.constructor, this.DocumentReference, this.tableParams)).delete();
         if(deleted){
-            this.triggerEvent('onDelete', this.data);
+            this.triggerEvent('onDelete', {...this.data});
         }
         return deleted;
     }
