@@ -1,5 +1,7 @@
 let firebase;
-if(!process.hasOwnProperty('firebase')){
+if(process.hasOwnProperty('firebase')){
+    firebase = process.firebase;
+}else{
     firebase = require('firebase/app');
     require('firebase/firestore');
 }
