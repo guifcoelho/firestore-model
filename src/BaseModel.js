@@ -135,7 +135,7 @@ module.exports = class BaseModel{
         if(schema.hasOwnProperty('type') && !this.checkSchemaType(schema, data)){
             throw new Error(`BaseModel:: Value '${key}:${data}' in '${this.table}' is not '${schema.type}'`);
         }
-        if(data instanceof Array && schema.hasOwnProperty('arrayOf')){
+        if(Array.isArray(data) && schema.hasOwnProperty('arrayOf')){
             data.forEach((item, index) => {
                 if(!this.checkSchemaType({type: schema.arrayOf}, item)){
                     throw new Error(`BaseModel:: Value '${key}[${index}]:${item}' in '${this.table}' is not '${schema.arrayOf}'`);
@@ -158,8 +158,12 @@ module.exports = class BaseModel{
                 else if(item instanceof Timestamp){
                     return new Date(item.toDate());
                 }
-                else if(item instanceof Array && schema.hasOwnProperty('arrayOf')){
+                else if(Array.isArray(item) && schema.hasOwnProperty('arrayOf')){
                     return item.map(subItem => convertType(subItem, {type: schema.arrayOf}));
+                }else if(item === Object(item)){
+                    for(const prop in item){
+                        item[prop] = convertType(item[prop]);
+                    }
                 }
             }
             return item;
@@ -297,8 +301,12 @@ module.exports = class BaseModel{
                     return item.query;
                 }else if(item instanceof BaseModel){
                     return item.DocumentReference;
-                }else if(item instanceof Array){
+                }else if(Array.isArray(item)){
                     return item.map(subItem => convertItem(subItem));
+                }else if(item === Object(item)){
+                    for(const prop in item){
+                        item[prop] = convertItem(item[prop]);
+                    }
                 }
                 //Include other types...
             }

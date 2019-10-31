@@ -20,6 +20,7 @@ const DateAttributeModel = require('./models/DateAttributeModel.js');
 const ArrayAttributeModel = require('./models/ArrayAttributeModel.js');
 const DefaultAttrModel = require('./models/DefaultAttrModel.js');
 const DefaultAttrFunctionModel = require('./models/DefaultAttrFunctionModel.js');
+const ObjectAttributeModel = require('./models/ObjectAttributeModel.js');
 
 describe('Create/update model', () => {
 
@@ -234,6 +235,16 @@ describe('Create with specific types', () => {
         const model = await ArrayAttributeModel.createNew({dates: data});
         assert.equal(model.data.dates.length, data.length);
         model.data.dates.forEach((item, index) => assert.equal(item.getTime(), data[index].getTime()));
+    });
+
+    it('should create with Object attribute and convert known inner types', async () => {
+        const model = await ObjectAttributeModel.createNew({
+            objectAttr: {
+                date: new Date(),
+                title: 'texto'
+            }
+        });
+        assert.equal(model.data.objectAttr.date instanceof Date, true);
     });
 
 });
