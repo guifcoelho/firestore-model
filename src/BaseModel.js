@@ -123,7 +123,7 @@ module.exports = class BaseModel{
                 
                 //And the last one
                 if(schema.type == Object){
-                    return value === Object(value);
+                    return Boolean(value) && typeof item != 'function' && value.constructor === Object;
                 }
                 return value instanceof schema.type;
             }
@@ -160,9 +160,11 @@ module.exports = class BaseModel{
                 }
                 else if(Array.isArray(item) && schema.hasOwnProperty('arrayOf')){
                     return item.map(subItem => convertType(subItem, {type: schema.arrayOf}));
-                }else if(item === Object(item)){
+                }else if( Boolean(item) && typeof item != 'function' && item.constructor === Object ){
                     for(const prop in item){
-                        item[prop] = convertType(item[prop]);
+                        if(item.hasOwnProperty(prop)){
+                            item[prop] = convertType(item[prop]);
+                        }
                     }
                 }
             }
@@ -303,9 +305,11 @@ module.exports = class BaseModel{
                     return item.DocumentReference;
                 }else if(Array.isArray(item)){
                     return item.map(subItem => convertItem(subItem));
-                }else if(item === Object(item)){
+                }else if( Boolean(item) && typeof item != 'function' && item.constructor === Object ){
                     for(const prop in item){
-                        item[prop] = convertItem(item[prop]);
+                        if(item.hasOwnProperty(prop)){
+                            item[prop] = convertItem(item[prop]);
+                        }
                     }
                 }
                 //Include other types...
