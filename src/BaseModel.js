@@ -123,7 +123,7 @@ module.exports = class BaseModel{
                 
                 //And the last one
                 if(schema.type == Object){
-                    return Boolean(value) && typeof item != 'function' && value.constructor === Object;
+                    return Boolean(value) && typeof item != 'function';
                 }
                 return value instanceof schema.type;
             }
@@ -160,7 +160,7 @@ module.exports = class BaseModel{
                 }
                 else if(Array.isArray(item) && schema.hasOwnProperty('arrayOf')){
                     return item.map(subItem => convertType(subItem, {type: schema.arrayOf}));
-                }else if( Boolean(item) && typeof item != 'function' && item.constructor === Object ){
+                }else if( Boolean(item) && typeof item != 'function'){
                     for(const prop in item){
                         if(item.hasOwnProperty(prop)){
                             item[prop] = convertType(item[prop]);
